@@ -76,7 +76,7 @@ func init() {
 	flag.IntVar(
 		&args.rate,
 		"rate",
-		100,
+		5,
 		"How many times (per second) should the endpoint be hit.",
 	)
 	flag.StringVar(
@@ -89,6 +89,8 @@ func init() {
 
 func main() {
 	flag.Parse()
+
+	// Consider passing a yaml map from test-name to rate as config file to allow more flexability.
 
 	connection, err := sdk.NewConnectionBuilder().
 		Insecure(true).

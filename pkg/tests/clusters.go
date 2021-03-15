@@ -21,6 +21,7 @@ const (
 )
 
 func TestListClusters(attacker *vegeta.Attacker,
+	testID string,
 	metrics map[string]*vegeta.Metrics,
 	rate vegeta.Pacer,
 	outputDirectory string,
@@ -49,6 +50,7 @@ func TestListClusters(attacker *vegeta.Attacker,
 }
 
 func TestCreateCluster(attacker *vegeta.Attacker,
+	testID string,
 	metrics map[string]*vegeta.Metrics,
 	rate vegeta.Pacer,
 	outputDirectory string,

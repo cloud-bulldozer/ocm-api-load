@@ -6,6 +6,7 @@ require (
 	github.com/onsi/ginkgo v1.15.0 // indirect
 	github.com/onsi/gomega v1.10.5 // indirect
 	github.com/openshift-online/ocm-sdk-go v0.1.157-0.20210204185703-869236f7f99c
+	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.6.0
 	github.com/tsenart/vegeta/v12 v12.8.4
 	github.com/zgalor/weberr v0.6.0
