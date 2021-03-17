@@ -72,6 +72,13 @@ func Run(
 			Rate:     helpers.ListClustersRate,
 			Handler:  TestListClusters,
 		},
+		{
+			TestName: "get-current-account",
+			Path:     helpers.GetCurrentAccountEndpoint,
+			Method:   http.MethodGet,
+			Rate:     helpers.GetCurrentAccount,
+			Handler:  TestGenericEndpoint,
+		},
 	}
 
 	for i := range tests {

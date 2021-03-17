@@ -15,6 +15,7 @@ var (
 	// Account Services
 	SelfAccessTokenRate   = vegeta.Rate{Freq: 1000, Per: time.Hour}
 	ListSubscriptionsRate = vegeta.Rate{Freq: 2000, Per: time.Hour}
+	GetCurrentAccount     = vegeta.Rate{Freq: 6, Per: time.Minute}
 
 	// Authorization Services
 	AccessReviewRate            = vegeta.Rate{Freq: 100, Per: time.Second}
