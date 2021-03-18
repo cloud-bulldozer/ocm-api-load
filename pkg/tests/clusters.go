@@ -20,59 +20,58 @@ const (
 	defaultAWSRegion = "us-east-1"
 )
 
-func TestListClusters(attacker *vegeta.Attacker,
-	testID string,
-	metrics map[string]*vegeta.Metrics,
-	rate vegeta.Pacer,
-	outputDirectory string,
-	duration time.Duration) error {
-	testName := "list-clusters"
+func TestListClusters(options *helpers.TestOptions) error {
+	testName := options.TestName
 	targeter := vegeta.NewStaticTargeter(vegeta.Target{
 		Method: http.MethodGet,
 		URL:    helpers.ClustersEndpoint,
 	})
 	fileName := fmt.Sprintf("list-clusters-results-%s", time.Now().Local().Format("2006-01-02"))
-	resFile, err := createFile(fileName, outputDirectory)
+	resFile, err := createFile(fileName, options.OutputDirectory)
 	if err != nil {
 		return err
 	}
 
-	metrics[testName] = new(vegeta.Metrics)
-	for res := range attacker.Attack(targeter, rate, duration, testName) {
-		metrics[testName].Add(res)
+	options.Metrics[testName] = new(vegeta.Metrics)
+	defer options.Metrics[testName].Close()
+	for res := range options.Attacker.Attack(targeter, options.Rate, options.Duration, testName) {
+		options.Metrics[testName].Add(res)
 		result.Write(res, resFile)
 	}
-	metrics[testName].Close()
 
-	return report.Write("list-clusters-report",
-		outputDirectory,
-		metrics[testName])
+	err = report.Write("list-clusters-report", options.OutputDirectory, options.Metrics[testName])
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func TestCreateCluster(attacker *vegeta.Attacker,
-	testID string,
-	metrics map[string]*vegeta.Metrics,
-	rate vegeta.Pacer,
-	outputDirectory string,
-	duration time.Duration) error {
-	testName := "create-cluster"
+func TestCreateCluster(options *helpers.TestOptions) error {
+
+	testName := options.TestName
 	targeter := generateCreateClusterTargeter()
+	// TODO: Consistent filename with other test results
 	fileName := fmt.Sprintf("create-cluster-results-%s", time.Now().Local().Format("2006-01-02"))
-	resFile, err := createFile(fileName, outputDirectory)
+	resFile, err := createFile(fileName, options.OutputDirectory)
 	if err != nil {
 		return err
 	}
 
-	metrics[testName] = new(vegeta.Metrics)
-	for res := range attacker.Attack(targeter, rate, duration, testName) {
-		metrics[testName].Add(res)
+	options.Metrics[testName] = new(vegeta.Metrics)
+	defer options.Metrics[testName].Close()
+	for res := range options.Attacker.Attack(targeter, options.Rate, options.Duration, testName) {
+		options.Metrics[testName].Add(res)
 		result.Write(res, resFile)
 	}
-	metrics[testName].Close()
 
-	return report.Write("create-cluster-report",
-		outputDirectory,
-		metrics[testName])
+	// TODO: Consistency among all tests
+	err = report.Write("create-cluster-report", options.OutputDirectory, options.Metrics[testName])
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Generates a targeter for the "POST /api/clusters_mgmt/v1/clusters" endpoint

@@ -114,7 +114,7 @@ func main() {
 	connAttacker = vegeta.Client(&http.Client{Transport: connection})
 	attacker = vegeta.NewAttacker(connAttacker)
 
-	if err := tests.Run(attacker, metrics, rate, args.outputDirectory, duration); err != nil {
+	if err := tests.Run(attacker, metrics, rate, args.outputDirectory, duration, connection); err != nil {
 		fmt.Printf("Error running create cluster load test: %v", err)
 		os.Exit(1)
 	}
