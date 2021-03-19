@@ -13,7 +13,6 @@ import (
 	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
 
-var connection *sdk.Connection
 var connAttacker func(*vegeta.Attacker)
 var rate vegeta.Rate
 var duration time.Duration
@@ -73,12 +72,6 @@ func init() {
 		1,
 		"How long should the load test take.",
 	)
-	flag.IntVar(
-		&args.rate,
-		"rate",
-		5,
-		"How many times (per second) should the endpoint be hit.",
-	)
 	flag.StringVar(
 		&args.outputDirectory,
 		"output-path",
@@ -106,15 +99,19 @@ func main() {
 		os.Exit(1)
 	}
 	defer helpers.Cleanup(connection)
-	attacker := new(vegeta.Attacker)
 	metrics := make(map[string]*vegeta.Metrics)
 
-	rate = vegeta.Rate{Freq: args.rate, Per: time.Second}
 	duration = time.Duration(args.durationInMin) * time.Minute
 	connAttacker = vegeta.Client(&http.Client{Transport: connection})
-	attacker = vegeta.NewAttacker(connAttacker)
+	attacker := vegeta.NewAttacker(connAttacker)
 
-	if err := tests.Run(attacker, metrics, rate, args.outputDirectory, duration, connection); err != nil {
+	err = helpers.CreateFolder(args.outputDirectory)
+	if err != nil {
+		fmt.Printf("Error creating output directory: %s", err)
+		os.Exit(1)
+	}
+
+	if err := tests.Run(attacker, metrics, args.outputDirectory, duration, connection); err != nil {
 		fmt.Printf("Error running create cluster load test: %v", err)
 		os.Exit(1)
 	}

@@ -1,11 +1,9 @@
-package tests
+package handlers
 
 import (
 	"bytes"
 	"fmt"
 	"net/http"
-	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/nimrodshn/cs-load-test/pkg/helpers"
@@ -26,8 +24,8 @@ func TestListClusters(options *helpers.TestOptions) error {
 		Method: http.MethodGet,
 		URL:    helpers.ClustersEndpoint,
 	})
-	fileName := fmt.Sprintf("list-clusters-results-%s", time.Now().Local().Format("2006-01-02"))
-	resFile, err := createFile(fileName, options.OutputDirectory)
+	fileName := fmt.Sprintf("%s_%s-%s.json", options.ID, options.TestName, time.Now().Local().Format("2006-01-02"))
+	resFile, err := helpers.CreateFile(fileName, options.OutputDirectory)
 	if err != nil {
 		return err
 	}
@@ -39,7 +37,7 @@ func TestListClusters(options *helpers.TestOptions) error {
 		result.Write(res, resFile)
 	}
 
-	err = report.Write("list-clusters-report", options.OutputDirectory, options.Metrics[testName])
+	err = report.Write(fmt.Sprintf("%s_%s-report", options.ID, options.TestName), options.OutputDirectory, options.Metrics[testName])
 	if err != nil {
 		return err
 	}
@@ -51,9 +49,8 @@ func TestCreateCluster(options *helpers.TestOptions) error {
 
 	testName := options.TestName
 	targeter := generateCreateClusterTargeter()
-	// TODO: Consistent filename with other test results
-	fileName := fmt.Sprintf("create-cluster-results-%s", time.Now().Local().Format("2006-01-02"))
-	resFile, err := createFile(fileName, options.OutputDirectory)
+	fileName := fmt.Sprintf("%s_%s-%s.json", options.ID, options.TestName, time.Now().Local().Format("2006-01-02"))
+	resFile, err := helpers.CreateFile(fileName, options.OutputDirectory)
 	if err != nil {
 		return err
 	}
@@ -66,7 +63,7 @@ func TestCreateCluster(options *helpers.TestOptions) error {
 	}
 
 	// TODO: Consistency among all tests
-	err = report.Write("create-cluster-report", options.OutputDirectory, options.Metrics[testName])
+	err = report.Write(fmt.Sprintf("%s_%s-report", options.ID, options.TestName), options.OutputDirectory, options.Metrics[testName])
 	if err != nil {
 		return err
 	}
@@ -108,17 +105,4 @@ func generateCreateClusterTargeter() vegeta.Targeter {
 		return nil
 	}
 	return targeter
-}
-
-func createFile(name, path string) (*os.File, error) {
-	resultPath := filepath.Join(path, fmt.Sprintf("%s.json", name))
-	out, err := os.Create(resultPath)
-	if err != nil {
-		// Silently ignore pre-existing file.
-		if err == os.ErrExist {
-			return out, nil
-		}
-		return nil, fmt.Errorf("Error while writing result: %v", err)
-	}
-	return out, nil
 }

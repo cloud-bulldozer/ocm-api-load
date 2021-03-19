@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/nimrodshn/cs-load-test/pkg/helpers"
+	"github.com/nimrodshn/cs-load-test/pkg/tests/handlers"
 	sdk "github.com/openshift-online/ocm-sdk-go"
 	uuid "github.com/satori/go.uuid"
 	vegeta "github.com/tsenart/vegeta/v12/lib"
@@ -13,7 +14,6 @@ import (
 func Run(
 	attacker *vegeta.Attacker,
 	metrics map[string]*vegeta.Metrics,
-	rate vegeta.Pacer,
 	outputDirectory string,
 	duration time.Duration,
 	connection *sdk.Connection) error {
@@ -27,57 +27,51 @@ func Run(
 	// hopefully make it easier to modify and/or extend given the declarative
 	// style.
 	tests := []helpers.TestOptions{
-
 		{
 			TestName: "self-access-token",
 			Path:     helpers.SelfAccessTokenEndpoint,
 			Method:   http.MethodPost,
 			Rate:     helpers.SelfAccessTokenRate,
-			Handler:  TestGenericEndpoint,
+			Handler:  handlers.TestStaticEndpoint,
 		},
-
 		{
 			TestName: "list-subscriptions",
 			Path:     helpers.ListSubscriptionsEndpoint,
 			Method:   http.MethodGet,
 			Rate:     helpers.ListSubscriptionsRate,
-			Handler:  TestGenericEndpoint,
+			Handler:  handlers.TestStaticEndpoint,
 		},
-
 		{
 			TestName: "access-review",
 			Path:     helpers.AccessReviewEndpoint,
 			Method:   http.MethodPost,
 			Body:     "{\"account_username\": \"rhn-support-tiwillia\", \"action\": \"get\", \"resource_type\": \"Subscription\"}",
 			Rate:     helpers.AccessReviewRate,
-			Handler:  TestGenericEndpoint,
+			Handler:  handlers.TestStaticEndpoint,
 		},
-
 		{
 			TestName: "register-new-cluster",
 			Path:     helpers.ClusterRegistrationEndpoint,
 			Method:   http.MethodPost,
 			Rate:     helpers.RegisterNewClusterRate,
-			Handler:  TestRegisterNewCluster,
+			Handler:  handlers.TestRegisterNewCluster,
 		},
-
 		{
 			TestName: "create-cluster",
 			Rate:     helpers.CreateClusterRate,
-			Handler:  TestCreateCluster,
+			Handler:  handlers.TestCreateCluster,
 		},
-
 		{
 			TestName: "list-clusters",
 			Rate:     helpers.ListClustersRate,
-			Handler:  TestListClusters,
+			Handler:  handlers.TestListClusters,
 		},
 		{
 			TestName: "get-current-account",
 			Path:     helpers.GetCurrentAccountEndpoint,
 			Method:   http.MethodGet,
-			Rate:     helpers.GetCurrentAccount,
-			Handler:  TestGenericEndpoint,
+			Rate:     helpers.GetCurrentAccountRate,
+			Handler:  handlers.TestStaticEndpoint,
 		},
 	}
 

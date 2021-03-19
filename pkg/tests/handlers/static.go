@@ -1,4 +1,4 @@
-package tests
+package handlers
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
 
-func TestGenericEndpoint(options *helpers.TestOptions) error {
+func TestStaticEndpoint(options *helpers.TestOptions) error {
 
 	testName := options.TestName
 	log.Printf("Executing Test: %s", testName)
@@ -19,11 +19,11 @@ func TestGenericEndpoint(options *helpers.TestOptions) error {
 
 	// Vegeta Results File
 	fileName := fmt.Sprintf("%s_%s.json", options.ID, testName)
-	resultFile, err := createFile(fileName, options.OutputDirectory)
-	defer resultFile.Close()
+	resultFile, err := helpers.CreateFile(fileName, options.OutputDirectory)
 	if err != nil {
 		return err
 	}
+	defer resultFile.Close()
 
 	// Specify the HTTP request(s) that will be executed
 	target := vegeta.Target{

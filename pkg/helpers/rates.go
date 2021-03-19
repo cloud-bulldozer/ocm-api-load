@@ -7,6 +7,8 @@ import (
 )
 
 var (
+	// Default Rate
+	DefaultRate = vegeta.Rate{Freq: 5, Per: time.Second}
 
 	// Cluster Services
 	CreateClusterRate = vegeta.Rate{Freq: 10, Per: time.Second}
@@ -15,7 +17,7 @@ var (
 	// Account Services
 	SelfAccessTokenRate   = vegeta.Rate{Freq: 1000, Per: time.Hour}
 	ListSubscriptionsRate = vegeta.Rate{Freq: 2000, Per: time.Hour}
-	GetCurrentAccount     = vegeta.Rate{Freq: 6, Per: time.Minute}
+	GetCurrentAccountRate = vegeta.Rate{Freq: 6, Per: time.Minute}
 
 	// Authorization Services
 	AccessReviewRate            = vegeta.Rate{Freq: 100, Per: time.Second}
