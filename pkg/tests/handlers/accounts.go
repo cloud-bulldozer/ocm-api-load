@@ -1,4 +1,4 @@
-package tests
+package handlers
 
 import (
 	"bytes"
@@ -9,7 +9,6 @@ import (
 	"github.com/nimrodshn/cs-load-test/pkg/helpers"
 	"github.com/nimrodshn/cs-load-test/pkg/result"
 	sdk "github.com/openshift-online/ocm-sdk-go"
-	amsv1 "github.com/openshift-online/ocm-sdk-go/accountsmgmt/v1"
 	v1 "github.com/openshift-online/ocm-sdk-go/accountsmgmt/v1"
 	uuid "github.com/satori/go.uuid"
 	vegeta "github.com/tsenart/vegeta/v12/lib"
@@ -29,11 +28,11 @@ func TestRegisterNewCluster(options *helpers.TestOptions) error {
 
 	// Create a file to store results
 	fileName := fmt.Sprintf("%s_%s.json", options.ID, testName)
-	resultFile, err := createFile(fileName, options.OutputDirectory)
-	defer resultFile.Close()
+	resultFile, err := helpers.CreateFile(fileName, options.OutputDirectory)
 	if err != nil {
 		return err
 	}
+	defer resultFile.Close()
 
 	// Store Metrics from load test
 	options.Metrics[testName] = new(vegeta.Metrics)
@@ -81,7 +80,7 @@ func generateClusterRegistrationTargeter(connection *sdk.Connection) vegeta.Targ
 
 		// Each Cluster uses a UUID to ensure uniqueness
 		clusterId := uuid.NewV4().String()
-		body, err := amsv1.NewClusterRegistrationRequest().AuthorizationToken(authorizationToken).ClusterID(clusterId).Build()
+		body, err := v1.NewClusterRegistrationRequest().AuthorizationToken(authorizationToken).ClusterID(clusterId).Build()
 		if err != nil {
 			return err
 		}
