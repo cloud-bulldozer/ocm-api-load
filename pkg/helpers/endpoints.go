@@ -10,4 +10,5 @@ const (
 	ListSubscriptionsEndpoint   = "/api/accounts_mgmt/v1/subscriptions"
 	AccessReviewEndpoint        = "/api/authorizations/v1/access_review"
 	ClusterRegistrationEndpoint = "/api/accounts_mgmt/v1/cluster_registrations"
+	GetCurrentAccountEndpoint   = "/api/accounts_mgmt/v1/current_account"
 )
