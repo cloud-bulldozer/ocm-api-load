@@ -1,4 +1,4 @@
-module github.com/nimrodshn/cs-load-test
+module github.com/cloud-bulldozer/ocm-api-load
 
 go 1.15
 

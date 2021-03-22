@@ -1,4 +1,4 @@
-# CS LOAD TEST
+# OCM API LOAD TEST
 
 A set of load tests for OCM's clusters-service, based on vegeta.
 
@@ -7,7 +7,7 @@ A set of load tests for OCM's clusters-service, based on vegeta.
 Compile using `make` and run as a simple binary:
 
 ```sh
-./cs-load-test --token=<OCM_TOKEN>   \
+./ocm-api-load --token=<OCM_TOKEN>   \
     --output-path="/path/to/output/" \
     --gateway-url=<api-gateway-url>  \
     --duration-in-min=1              \

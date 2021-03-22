@@ -6,8 +6,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/nimrodshn/cs-load-test/pkg/helpers"
-	"github.com/nimrodshn/cs-load-test/pkg/result"
+	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
+	"github.com/cloud-bulldozer/ocm-api-load/pkg/result"
 	sdk "github.com/openshift-online/ocm-sdk-go"
 	v1 "github.com/openshift-online/ocm-sdk-go/accountsmgmt/v1"
 	uuid "github.com/satori/go.uuid"

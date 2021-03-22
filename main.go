@@ -7,8 +7,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/nimrodshn/cs-load-test/pkg/helpers"
-	"github.com/nimrodshn/cs-load-test/pkg/tests"
+	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
+	"github.com/cloud-bulldozer/ocm-api-load/pkg/tests"
 	sdk "github.com/openshift-online/ocm-sdk-go"
 	vegeta "github.com/tsenart/vegeta/v12/lib"
 )

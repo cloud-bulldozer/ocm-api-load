@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/nimrodshn/cs-load-test/pkg/helpers"
-	"github.com/nimrodshn/cs-load-test/pkg/report"
-	"github.com/nimrodshn/cs-load-test/pkg/result"
+	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
+	"github.com/cloud-bulldozer/ocm-api-load/pkg/report"
+	"github.com/cloud-bulldozer/ocm-api-load/pkg/result"
 
 	v1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
 	vegeta "github.com/tsenart/vegeta/v12/lib"

@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/nimrodshn/cs-load-test/pkg/helpers"
-	"github.com/nimrodshn/cs-load-test/pkg/tests/handlers"
+	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
+	"github.com/cloud-bulldozer/ocm-api-load/pkg/tests/handlers"
 	sdk "github.com/openshift-online/ocm-sdk-go"
 	uuid "github.com/satori/go.uuid"
 	vegeta "github.com/tsenart/vegeta/v12/lib"

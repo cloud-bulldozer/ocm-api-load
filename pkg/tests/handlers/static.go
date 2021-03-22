@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/nimrodshn/cs-load-test/pkg/helpers"
-	"github.com/nimrodshn/cs-load-test/pkg/result"
+	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
+	"github.com/cloud-bulldozer/ocm-api-load/pkg/result"
 	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
 
