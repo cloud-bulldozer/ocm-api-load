@@ -24,7 +24,7 @@ func TestRegisterNewCluster(options *helpers.TestOptions) error {
 
 	// Fetch the authorization token and create a dynamic Target generator for
 	// building valid HTTP Requests
-	targeter := generateClusterRegistrationTargeter(options.Connection)
+	targeter := generateClusterRegistrationTargeter(options.Path, options.Connection)
 
 	// Create a file to store results
 	fileName := fmt.Sprintf("%s_%s.json", options.ID, testName)
@@ -68,7 +68,7 @@ func getAuthorizationToken(connection *sdk.Connection) string {
 // generateClusterRegistrationTargeter returns a targeter which will create a
 // unique Cluster Registration request body each time using a valid auth token
 // and a UUID for the Cluster's ID to ensure uniqueness.
-func generateClusterRegistrationTargeter(connection *sdk.Connection) vegeta.Targeter {
+func generateClusterRegistrationTargeter(url string, connection *sdk.Connection) vegeta.Targeter {
 
 	// Cache the Authorization Token to avoid retrieving it with every request
 	var authorizationToken = ""
@@ -92,7 +92,7 @@ func generateClusterRegistrationTargeter(connection *sdk.Connection) vegeta.Targ
 		}
 
 		t.Method = http.MethodPost
-		t.URL = helpers.ClusterRegistrationEndpoint
+		t.URL = url
 		t.Body = raw.Bytes()
 
 		return nil
