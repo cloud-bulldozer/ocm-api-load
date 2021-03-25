@@ -1,0 +1,31 @@
+---
+token: xxxXXXyyyYYYzzzZZZ           # Offline token for authentication.
+gateway-url: http://localhost:8000  # Gateway URL.
+client:
+  - id: cloud-services              # OpenID client identifier.
+  - secret: "secure-secret"         # OpenID client secret.
+duration-minutes: 1                 # How long should the load test take.
+output-path: "./results"            # path to output results.
+tests:
+  self-access-token:
+    freq: 1000
+    per: "h"
+  list-subscriptions:
+    freq: 2000
+    per: "h"
+  access-review:
+    freq: 100
+    per: "s"
+  register-new-cluster:
+    freq: 1000
+    per: "h"
+  create-cluster:
+    freq: 10
+    per: "s"
+  list-clusters:
+    freq: 10
+    per: "s"
+    duration: 20s
+  get-current-account:
+    freq: 6
+    per: "m"

@@ -8,6 +8,7 @@ require (
 	github.com/openshift-online/ocm-sdk-go v0.1.157-0.20210204185703-869236f7f99c
 	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.6.0
+	github.com/spf13/viper v1.6.1
 	github.com/tsenart/vegeta/v12 v12.8.4
 	github.com/zgalor/weberr v0.6.0
 	gitlab.cee.redhat.com/service/uhc-clusters-service v0.0.12-0.20210201130243-cb9e230afef4
