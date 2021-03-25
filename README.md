@@ -70,7 +70,7 @@ Each test can contain this options:
 ```yaml
 ---
 token: xxxXXXyyyYYYzzzZZZ
-gateway-url: https://api.integration.openshift.com
+gateway-url: https://api.my-env.openshift.com
 ```
 
 ### Full yaml config file
