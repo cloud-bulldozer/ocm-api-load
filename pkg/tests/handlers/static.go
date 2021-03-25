@@ -12,11 +12,6 @@ import (
 func TestStaticEndpoint(options *helpers.TestOptions) error {
 
 	testName := options.TestName
-	log.Printf("Executing Test: %s", testName)
-	log.Printf("Rate: %s", options.Rate.String())
-	log.Printf("Duration: %s", options.Duration.String())
-	log.Printf("Path: %s", options.Path)
-
 	// Vegeta Results File
 	fileName := fmt.Sprintf("%s_%s.json", options.ID, testName)
 	resultFile, err := helpers.CreateFile(fileName, options.OutputDirectory)

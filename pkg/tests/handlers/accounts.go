@@ -20,8 +20,6 @@ import (
 func TestRegisterNewCluster(options *helpers.TestOptions) error {
 
 	testName := options.TestName
-	log.Printf("Executing Test: %s", testName)
-
 	// Fetch the authorization token and create a dynamic Target generator for
 	// building valid HTTP Requests
 	targeter := generateClusterRegistrationTargeter(options.Path, options.Connection)
