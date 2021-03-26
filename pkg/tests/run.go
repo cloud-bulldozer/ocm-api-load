@@ -60,6 +60,11 @@ func Run(
 		}
 
 		// Execute the Test
+		log.Printf("-------------------------------------------------------------------------------")
+		log.Printf("Executing Test: %s", t.TestName)
+		log.Printf("Rate: %s", t.Rate.String())
+		log.Printf("Duration: %s", t.Duration.String())
+		log.Printf("Path: %s", t.Path)
 		err := t.Handler(&t)
 		if err != nil {
 			return err

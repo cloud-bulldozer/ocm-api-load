@@ -1,6 +1,16 @@
 # OCM API LOAD TEST
 
-A set of load tests for OCM's clusters-service, based on vegeta.
+![Go Version](https://img.shields.io/badge/go%20version-%3E=1.15-61CFDD.svg?style=flat-square)
+
+A set of load tests for [OCM](https://github.com/openshift-online/ocm-api-model)'s clusters-service, based on vegeta.
+
+## Requirements
+
+- Go >= 1.15
+
+To get all modules to local cache run
+
+`go mod dowload`
 
 ## How to run?
 
