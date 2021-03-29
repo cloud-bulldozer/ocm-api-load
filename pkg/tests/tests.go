@@ -1,10 +1,13 @@
 package tests
 
 import (
+	"bytes"
+	"log"
 	"net/http"
 
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/tests/handlers"
+	authv1 "github.com/openshift-online/ocm-sdk-go/authorizations/v1"
 )
 
 // Specify Test Cases
@@ -28,8 +31,8 @@ var tests = []helpers.TestOptions{
 		TestName: "access-review",
 		Path:     "/api/authorizations/v1/access_review",
 		Method:   http.MethodPost,
-		Body:     "{\"account_username\": \"rhn-support-tiwillia\", \"action\": \"get\", \"resource_type\": \"Subscription\"}",
 		Handler:  handlers.TestStaticEndpoint,
+		Body:     accessReviewBody(),
 	},
 	{
 		TestName: "register-new-cluster",
@@ -55,4 +58,22 @@ var tests = []helpers.TestOptions{
 		Method:   http.MethodGet,
 		Handler:  handlers.TestStaticEndpoint,
 	},
+}
+
+func accessReviewBody() []byte {
+	buff := &bytes.Buffer{}
+	resourceReviewReq, err := authv1.NewAccessReviewRequest().
+		AccountUsername(helpers.AccountUsername).
+		Action("get").
+		ResourceType("Subscription").
+		Build()
+	if err != nil {
+		log.Printf("building `access-review` reques: %s", err)
+		return buff.Bytes()
+	}
+	err = authv1.MarshalAccessReviewRequest(resourceReviewReq, buff)
+	if err != nil {
+		log.Printf("marshaling `access-review` reques: %s", err)
+	}
+	return buff.Bytes()
 }
