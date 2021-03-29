@@ -26,7 +26,7 @@ func TestStaticEndpoint(options *helpers.TestOptions) error {
 		URL:    options.Path,
 	}
 	if len(options.Body) > 0 {
-		target.Body = []byte(options.Body)
+		target.Body = options.Body
 	}
 	targeter := vegeta.NewStaticTargeter(target)
 

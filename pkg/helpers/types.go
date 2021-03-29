@@ -17,7 +17,7 @@ type TestOptions struct {
 	TestName string // name of the test. e.g. get-access-token
 	Path     string // path of the endpoint. e.g. /api/v1/foo
 	Method   string // HTTP Method
-	Body     string // Only really used by generic test handlers
+	Body     []byte // Only really used by generic test handlers
 	Rate     vegeta.Rate
 	Duration time.Duration
 
