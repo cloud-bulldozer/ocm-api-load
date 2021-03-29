@@ -76,19 +76,19 @@ func TestCreateCluster(options *helpers.TestOptions) error {
 func generateCreateClusterTargeter(ID, method, url string) vegeta.Targeter {
 	idx := 0
 
-	// This will take the first 9 characters of the UUID
-	// and the 9th character is a `-`.
-	// When building the name we won't need the `-` there.
-	id := ID[:9]
+	// This will take the first 4 characters of the UUID
+	// Cluster Names must match the following regex:
+	// ^[a-z]([-a-z0-9]*[a-z0-9])?$
+	id := ID[:4]
 
 	targeter := func(t *vegeta.Target) error {
 		fakeClusterProps := map[string]string{
 			"fake_cluster": "true",
 		}
 		body, err := v1.NewCluster().
-			Name(fmt.Sprintf("%s%d", id, idx)).
+			Name(fmt.Sprintf("perf-%s-%d", id, idx)).
 			Properties(fakeClusterProps).
-			MultiAZ(false).
+			MultiAZ(true).
 			Region(v1.NewCloudRegion().ID(defaultAWSRegion)).
 			Build()
 		if err != nil {
