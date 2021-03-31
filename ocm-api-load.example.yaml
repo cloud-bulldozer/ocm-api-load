@@ -29,3 +29,6 @@ tests:
   get-current-account:
     freq: 6
     per: "m"
+  quota-cost:
+    freq: 1000
+    per: "h"

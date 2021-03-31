@@ -43,6 +43,7 @@ path as your binary, it will be autodetected and you could run by just calling i
 | create-cluster | /api/clusters_mgmt/v1/clusters | POST |
 | list-clusters | /api/clusters_mgmt/v1/clusters | GET |
 | get-current-account | /api/accounts_mgmt/v1/current_account | GET |
+| quota-cost | /api/accounts_mgmt/v1/organizations/{orgId}/quota_cost | GET |
 |--|--|--|
 
 ## Config file
@@ -117,4 +118,7 @@ tests:
   get-current-account:
     freq: 6
     per: "m"
+  quota-cost:
+    freq: 1000
+    per: "h"
 ```

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/result"
@@ -97,4 +98,30 @@ func generateClusterRegistrationTargeter(url string, connection *sdk.Connection)
 	}
 
 	return targeter
+}
+
+// Test quota cost
+func TestQuotaCost(options *helpers.TestOptions) error {
+
+	conn := options.Connection
+
+	orgs, err := conn.AccountsMgmt().V1().Organizations().List().Send()
+	if err != nil {
+		return err
+	}
+
+	if orgs.Total() == 0 {
+		return fmt.Errorf("no organizations where found for this account")
+	}
+
+	orgsIds := []string{}
+	for _, o := range orgs.Items().Slice() {
+		orgsIds = append(orgsIds, o.ID())
+	}
+
+	log.Printf("Using Organization id: %s.", orgsIds[0])
+	options.Path = strings.Replace(options.Path, "{orgId}", orgsIds[0], 1)
+
+	return TestStaticEndpoint(options)
+
 }

@@ -58,6 +58,12 @@ var tests = []helpers.TestOptions{
 		Method:   http.MethodGet,
 		Handler:  handlers.TestStaticEndpoint,
 	},
+	{
+		TestName: "quota-cost",
+		Path:     "/api/accounts_mgmt/v1/organizations/{orgId}/quota_cost",
+		Method:   http.MethodGet,
+		Handler:  handlers.TestQuotaCost,
+	},
 }
 
 func accessReviewBody() []byte {
