@@ -64,6 +64,13 @@ var tests = []helpers.TestOptions{
 		Method:   http.MethodGet,
 		Handler:  handlers.TestQuotaCost,
 	},
+	{
+		TestName: "resource-review",
+		Path:     "/api/authorizations/v1/resource_review",
+		Method:   http.MethodPost,
+		Handler:  handlers.TestStaticEndpoint,
+		Body:     resourceReviewbody(),
+	},
 }
 
 func accessReviewBody() []byte {
@@ -74,12 +81,30 @@ func accessReviewBody() []byte {
 		ResourceType("Subscription").
 		Build()
 	if err != nil {
-		log.Printf("building `access-review` reques: %s", err)
+		log.Printf("building `access-review` request: %s", err)
 		return buff.Bytes()
 	}
 	err = authv1.MarshalAccessReviewRequest(resourceReviewReq, buff)
 	if err != nil {
-		log.Printf("marshaling `access-review` reques: %s", err)
+		log.Printf("marshaling `access-review` request: %s", err)
+	}
+	return buff.Bytes()
+}
+
+func resourceReviewbody() []byte {
+	buff := &bytes.Buffer{}
+	resourcereviewReq, err := authv1.NewResourceReviewRequest().
+		AccountUsername(helpers.AccountUsername).
+		ResourceType("Cluster").
+		Action("get").
+		Build()
+	if err != nil {
+		log.Printf("building `resource-review` request: %s", err)
+		return buff.Bytes()
+	}
+	err = authv1.MarshalResourceReviewRequest(resourcereviewReq, buff)
+	if err != nil {
+		log.Printf("marshaling `resource-review` request: %s", err)
 	}
 	return buff.Bytes()
 }

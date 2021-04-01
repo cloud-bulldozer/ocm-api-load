@@ -121,4 +121,7 @@ tests:
   quota-cost:
     freq: 1000
     per: "h"
+  resource-review:
+    freq: 2000
+    per: "h"
 ```
