@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
+	"github.com/cloud-bulldozer/ocm-api-load/pkg/report"
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/result"
 	sdk "github.com/openshift-online/ocm-sdk-go"
 	v1 "github.com/openshift-online/ocm-sdk-go/accountsmgmt/v1"
@@ -42,7 +43,14 @@ func TestRegisterNewCluster(options *helpers.TestOptions) error {
 		options.Metrics[testName].Add(res)
 	}
 
-	log.Printf("Results written to: %s/%s\n", options.OutputDirectory, fileName)
+	log.Printf("Results written to: %s", fileName)
+
+	if options.WriteReport {
+		err = report.Write(fmt.Sprintf("%s_%s-report", options.ID, options.TestName), options.OutputDirectory, options.Metrics[testName])
+		if err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
@@ -124,4 +132,79 @@ func TestQuotaCost(options *helpers.TestOptions) error {
 
 	return TestStaticEndpoint(options)
 
+}
+
+// Test Cluster Authorizations
+func TestClusterAuthorizations(options *helpers.TestOptions) error {
+	testName := options.TestName
+	// Vegeta Results File
+	fileName := fmt.Sprintf("%s_%s.json", options.ID, testName)
+	resultFile, err := helpers.CreateFile(fileName, options.OutputDirectory)
+	if err != nil {
+		return err
+	}
+	defer resultFile.Close()
+
+	targeter := func(t *vegeta.Target) error {
+
+		// Each Cluster uses a UUID to ensure uniqueness
+		clusterId := uuid.NewV4().String()
+		t.Method = http.MethodPost
+		t.URL = options.Path
+		t.Body = clusterAuthorizationsBody(clusterId)
+
+		return nil
+	}
+
+	// Create a Metrics bucket for this test run
+	options.Metrics[testName] = new(vegeta.Metrics)
+	defer options.Metrics[testName].Close()
+
+	// Execute the HTTP Requests; repeating as needed to meet the specified duration
+	for res := range options.Attacker.Attack(targeter, options.Rate, options.Duration, options.TestName) {
+		result.Write(res, resultFile)
+		options.Metrics[testName].Add(res)
+	}
+
+	log.Printf("Results written to: %s", fileName)
+
+	if options.WriteReport {
+		err = report.Write(fmt.Sprintf("%s_%s-report", options.ID, options.TestName), options.OutputDirectory, options.Metrics[testName])
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func clusterAuthorizationsBody(clusterID string) []byte {
+	buff := &bytes.Buffer{}
+	reservedResource := v1.NewReservedResource().
+		ResourceName(helpers.M5XLargeResource).
+		ResourceType(helpers.AWSComputeNodeResourceType).
+		Count(helpers.DefaultClusterCount).
+		BillingModel(helpers.StandardBillingModel)
+
+	clusterAuthReq, err := v1.NewClusterAuthorizationRequest().
+		ClusterID(clusterID).
+		ProductID(helpers.OsdProductID).
+		CloudProviderID(helpers.AWSCloudProvider).
+		AccountUsername(helpers.ClusterAuthAccountUsername).
+		Managed(helpers.ClusterAuthManaged).
+		Reserve(helpers.ClusterAuthReserve).
+		BYOC(helpers.ClusterAuthBYOC).
+		AvailabilityZone(helpers.SingleAvailabilityZone).
+		Resources(reservedResource).
+		Build()
+	if err != nil {
+		log.Printf("building `cluster-authorizations` request: %s", err)
+		return buff.Bytes()
+	}
+	err = v1.MarshalClusterAuthorizationRequest(clusterAuthReq, buff)
+	if err != nil {
+
+		log.Printf("marshaling `cluster-authorizations` request: %s", err)
+	}
+	return buff.Bytes()
 }

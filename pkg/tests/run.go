@@ -57,6 +57,11 @@ func Run(
 					return err
 				}
 			}
+			key := fmt.Sprintf("%s.write-report", t.TestName)
+			if viper.IsSet(key) {
+				writeReport := viper.GetBool(key)
+				t.WriteReport = writeReport
+			}
 		}
 
 		// Execute the Test
@@ -65,6 +70,7 @@ func Run(
 		log.Printf("Rate: %s", t.Rate.String())
 		log.Printf("Duration: %s", t.Duration.String())
 		log.Printf("Path: %s", t.Path)
+		log.Printf("Report: %v", t.WriteReport)
 		err := t.Handler(&t)
 		if err != nil {
 			return err
