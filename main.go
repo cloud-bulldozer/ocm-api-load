@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"time"
 
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
@@ -99,6 +100,11 @@ func main() {
 	err = helpers.CreateFolder(outputDirectory)
 	if err != nil {
 		fmt.Printf("Error creating output directory: %s", err)
+		os.Exit(1)
+	}
+	err = helpers.CreateFolder(path.Join(outputDirectory, helpers.ReportsDirectory))
+	if err != nil {
+		fmt.Printf("Error creating reports directory: %s", err)
 		os.Exit(1)
 	}
 

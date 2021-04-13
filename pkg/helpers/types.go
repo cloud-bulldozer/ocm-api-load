@@ -28,5 +28,7 @@ type TestOptions struct {
 	Metrics         map[string]*vegeta.Metrics     // Stores results from each Test
 	Attacker        *vegeta.Attacker
 	OutputDirectory string // Directory to write vegeta results as a File
-	Connection      *sdk.Connection
+	// TODO make cofigurable???
+	ReportsDirectory string // Directory to write vegeta reports, always `OutputDirectory/reports`
+	Connection       *sdk.Connection
 }

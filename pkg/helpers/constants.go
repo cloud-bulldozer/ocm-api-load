@@ -1,6 +1,7 @@
 package helpers
 
 const (
+	ReportsDirectory = "reports"
 	AccountUsername  = "rhn-support-tiwillia"
 	DefaultAWSRegion = "us-east-1"
 
