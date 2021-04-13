@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/report"
@@ -55,6 +56,41 @@ func TestRegisterNewCluster(options *helpers.TestOptions) error {
 	return nil
 }
 
+func TestRegisterExistingCluster(options *helpers.TestOptions) error {
+
+	testName := options.TestName
+	quantity := options.Rate.Freq
+	targeter := generateClusterReRegistrationTargeter(quantity, options.Path, options.Connection)
+
+	fileName := fmt.Sprintf("%s_%s.json", options.ID, testName)
+	resultFile, err := helpers.CreateFile(fileName, options.OutputDirectory)
+	if err != nil {
+		return err
+	}
+	defer resultFile.Close()
+
+	// Store Metrics from load test
+	options.Metrics[testName] = new(vegeta.Metrics)
+	defer options.Metrics[testName].Close()
+
+	for res := range options.Attacker.Attack(targeter, options.Rate, options.Duration, testName) {
+		result.Write(res, resultFile)
+		options.Metrics[testName].Add(res)
+	}
+
+	log.Printf("Results written to: %s/%s\n", options.OutputDirectory, fileName)
+
+	if options.WriteReport {
+		err = report.Write(fmt.Sprintf("%s_%s-report", options.ID, options.TestName), options.OutputDirectory, options.Metrics[testName])
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+
+}
+
 // getAuthorizationToken will fetch and return the current user's Authorization
 //Token which is required by certain endpoints such as Cluster Registration.
 func getAuthorizationToken(connection *sdk.Connection) string {
@@ -70,6 +106,81 @@ func getAuthorizationToken(connection *sdk.Connection) string {
 		log.Println("Successfully fetched Authorization Token")
 	}
 	return token
+}
+
+// generateClusterReRegistrationTargeter registers fake clusters and then
+// returns a targeter which uses those fake clusters.
+func generateClusterReRegistrationTargeter(qty int, url string, connection *sdk.Connection) vegeta.Targeter {
+
+	clusterIds := make([]string, qty)
+	var currentTarget = 0
+
+	// Cache the Authorization Token to avoid retrieving it with every request
+	var authorizationToken = ""
+	if len(authorizationToken) == 0 {
+		authorizationToken = getAuthorizationToken(connection)
+	}
+
+	// Register multiple mock clusters and store their IDs
+	log.Printf("Registering %d clusters to use for re-registration test", qty)
+	for i := range clusterIds {
+
+		clusterID := uuid.NewV4().String()
+
+		body, err := v1.NewClusterRegistrationRequest().AuthorizationToken(authorizationToken).ClusterID(clusterID).Build()
+		if err != nil {
+			log.Fatalln("Unable to build cluster registration request: ", err)
+		}
+
+		var rawBody bytes.Buffer
+		err = v1.MarshalClusterRegistrationRequest(body, &rawBody)
+		if err != nil {
+			log.Fatalln("Unable to serialize cluster registration request body: ", err)
+		}
+
+		resp, err := connection.AccountsMgmt().V1().ClusterRegistrations().Post().Request(body).Send()
+		if err != nil {
+			log.Fatalln("Unable to register cluster: ", err)
+		}
+
+		log.Printf("[%d/%d] Registered Cluster: '%s'. Response: %d\n", i, len(clusterIds), clusterID, resp.Status())
+		clusterIds[i] = clusterID
+
+		// Avoid hitting rate limiting
+		time.Sleep(time.Second * 1)
+
+	}
+
+	targeter := func(t *vegeta.Target) error {
+
+		clusterId := clusterIds[currentTarget]
+
+		body, err := v1.NewClusterRegistrationRequest().AuthorizationToken(authorizationToken).ClusterID(clusterId).Build()
+		if err != nil {
+			return err
+		}
+
+		var rawBody bytes.Buffer
+		err = v1.MarshalClusterRegistrationRequest(body, &rawBody)
+		if err != nil {
+			return err
+		}
+
+		t.Method = http.MethodPost
+		t.URL = url
+		t.Body = rawBody.Bytes()
+
+		// Loop through Cluster IDs
+		currentTarget = currentTarget + 1
+		if currentTarget > (qty - 1) {
+			currentTarget = 0
+		}
+
+		return nil
+	}
+
+	return targeter
+
 }
 
 // generateClusterRegistrationTargeter returns a targeter which will create a
@@ -92,15 +203,15 @@ func generateClusterRegistrationTargeter(url string, connection *sdk.Connection)
 			return err
 		}
 
-		var raw bytes.Buffer
-		err = v1.MarshalClusterRegistrationRequest(body, &raw)
+		var rawBody bytes.Buffer
+		err = v1.MarshalClusterRegistrationRequest(body, &rawBody)
 		if err != nil {
 			return err
 		}
 
 		t.Method = http.MethodPost
 		t.URL = url
-		t.Body = raw.Bytes()
+		t.Body = rawBody.Bytes()
 
 		return nil
 	}

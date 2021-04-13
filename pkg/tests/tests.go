@@ -41,6 +41,12 @@ var tests = []helpers.TestOptions{
 		Handler:  handlers.TestRegisterNewCluster,
 	},
 	{
+		TestName: "register-existing-cluster",
+		Path:     "/api/accounts_mgmt/v1/cluster_registrations",
+		Method:   http.MethodPost,
+		Handler:  handlers.TestRegisterExistingCluster,
+	},
+	{
 		TestName: "create-cluster",
 		Path:     "/api/clusters_mgmt/v1/clusters",
 		Method:   http.MethodPost,

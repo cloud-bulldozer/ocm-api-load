@@ -111,6 +111,9 @@ tests:
   register-new-cluster:
     freq: 1000
     per: "h"
+  register-existing-cluster:
+    freq: 25
+    per: "s"
   create-cluster:
     freq: 10
     per: "s"
