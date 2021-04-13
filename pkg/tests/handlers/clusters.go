@@ -34,7 +34,7 @@ func TestCreateCluster(options *helpers.TestOptions) error {
 	log.Printf("Results written to: %s", fileName)
 
 	if options.WriteReport {
-		err = report.Write(fmt.Sprintf("%s_%s-report", options.ID, options.TestName), options.OutputDirectory, options.Metrics[testName])
+		err = report.Write(fmt.Sprintf("%s_%s-report", options.ID, options.TestName), options.ReportsDirectory, options.Metrics[testName])
 		if err != nil {
 			return err
 		}

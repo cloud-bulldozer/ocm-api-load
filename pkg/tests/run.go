@@ -3,6 +3,7 @@ package tests
 import (
 	"fmt"
 	"log"
+	"path"
 	"time"
 
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
@@ -28,6 +29,7 @@ func Run(
 		// Bind "Test Harness"
 		t.ID = testID
 		t.OutputDirectory = outputDirectory
+		t.ReportsDirectory = path.Join(outputDirectory, helpers.ReportsDirectory)
 		t.Attacker = attacker
 		t.Metrics = metrics
 		t.Connection = connection
