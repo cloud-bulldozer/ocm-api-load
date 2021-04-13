@@ -134,4 +134,7 @@ tests:
   cluster-authorizations:
     freq: 2000
     per: "h"
+  self-terms-review:
+    freq: 10
+    per: "s"
 ```
