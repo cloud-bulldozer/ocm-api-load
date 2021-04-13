@@ -47,10 +47,11 @@ var tests = []helpers.TestOptions{
 		Handler:  handlers.TestCreateCluster,
 	},
 	{
-		TestName: "list-clusters",
-		Path:     "/api/clusters_mgmt/v1/clusters",
-		Method:   http.MethodGet,
-		Handler:  handlers.TestListClusters,
+		TestName:    "list-clusters",
+		Path:        "/api/clusters_mgmt/v1/clusters",
+		Method:      http.MethodGet,
+		Handler:     handlers.TestStaticEndpoint,
+		WriteReport: true,
 	},
 	{
 		TestName: "get-current-account",
@@ -69,7 +70,13 @@ var tests = []helpers.TestOptions{
 		Path:     "/api/authorizations/v1/resource_review",
 		Method:   http.MethodPost,
 		Handler:  handlers.TestStaticEndpoint,
-		Body:     resourceReviewbody(),
+		Body:     resourceReviewBody(),
+	},
+	{
+		TestName: "cluster-authorizations",
+		Path:     "/api/accounts_mgmt/v1/cluster_authorizations",
+		Method:   http.MethodPost,
+		Handler:  handlers.TestClusterAuthorizations,
 	},
 }
 
@@ -91,7 +98,7 @@ func accessReviewBody() []byte {
 	return buff.Bytes()
 }
 
-func resourceReviewbody() []byte {
+func resourceReviewBody() []byte {
 	buff := &bytes.Buffer{}
 	resourcereviewReq, err := authv1.NewResourceReviewRequest().
 		AccountUsername(helpers.AccountUsername).

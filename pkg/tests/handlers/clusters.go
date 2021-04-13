@@ -3,6 +3,7 @@ package handlers
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
@@ -12,37 +13,6 @@ import (
 	v1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
 	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
-
-const (
-	defaultAWSRegion = "us-east-1"
-)
-
-func TestListClusters(options *helpers.TestOptions) error {
-	testName := options.TestName
-	targeter := vegeta.NewStaticTargeter(vegeta.Target{
-		Method: options.Method,
-		URL:    options.Path,
-	})
-	fileName := fmt.Sprintf("%s_%s-%s.json", options.ID, options.TestName, time.Now().Local().Format("2006-01-02"))
-	resFile, err := helpers.CreateFile(fileName, options.OutputDirectory)
-	if err != nil {
-		return err
-	}
-
-	options.Metrics[testName] = new(vegeta.Metrics)
-	defer options.Metrics[testName].Close()
-	for res := range options.Attacker.Attack(targeter, options.Rate, options.Duration, testName) {
-		options.Metrics[testName].Add(res)
-		result.Write(res, resFile)
-	}
-
-	err = report.Write(fmt.Sprintf("%s_%s-report", options.ID, options.TestName), options.OutputDirectory, options.Metrics[testName])
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
 
 func TestCreateCluster(options *helpers.TestOptions) error {
 
@@ -61,10 +31,13 @@ func TestCreateCluster(options *helpers.TestOptions) error {
 		result.Write(res, resFile)
 	}
 
-	// TODO: Consistency among all tests
-	err = report.Write(fmt.Sprintf("%s_%s-report", options.ID, options.TestName), options.OutputDirectory, options.Metrics[testName])
-	if err != nil {
-		return err
+	log.Printf("Results written to: %s", fileName)
+
+	if options.WriteReport {
+		err = report.Write(fmt.Sprintf("%s_%s-report", options.ID, options.TestName), options.OutputDirectory, options.Metrics[testName])
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -89,7 +62,7 @@ func generateCreateClusterTargeter(ID, method, url string) vegeta.Targeter {
 			Name(fmt.Sprintf("perf-%s-%d", id, idx)).
 			Properties(fakeClusterProps).
 			MultiAZ(true).
-			Region(v1.NewCloudRegion().ID(defaultAWSRegion)).
+			Region(v1.NewCloudRegion().ID(helpers.DefaultAWSRegion)).
 			Build()
 		if err != nil {
 			return err

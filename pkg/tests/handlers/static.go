@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
+	"github.com/cloud-bulldozer/ocm-api-load/pkg/report"
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/result"
 	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
@@ -41,6 +42,14 @@ func TestStaticEndpoint(options *helpers.TestOptions) error {
 	}
 
 	log.Printf("Results written to: %s", fileName)
+
+	if options.WriteReport {
+		err = report.Write(fmt.Sprintf("%s_%s-report", options.ID, options.TestName), options.OutputDirectory, options.Metrics[testName])
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 
 }
