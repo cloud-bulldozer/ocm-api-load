@@ -84,6 +84,13 @@ var tests = []helpers.TestOptions{
 		Method:   http.MethodPost,
 		Handler:  handlers.TestClusterAuthorizations,
 	},
+	{
+		TestName:    "self-terms-review",
+		Path:        "/api/authorizations/v1/self_terms_review",
+		Method:      http.MethodPost,
+		Handler:     handlers.TestStaticEndpoint,
+		WriteReport: false,
+	},
 }
 
 func accessReviewBody() []byte {
