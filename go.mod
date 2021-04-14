@@ -3,6 +3,7 @@ module github.com/cloud-bulldozer/ocm-api-load
 go 1.15
 
 require (
+	github.com/Rican7/retry v0.1.0
 	github.com/onsi/ginkgo v1.15.0 // indirect
 	github.com/onsi/gomega v1.10.5 // indirect
 	github.com/openshift-online/ocm-sdk-go v0.1.165
@@ -11,7 +12,6 @@ require (
 	github.com/spf13/viper v1.6.1
 	github.com/tsenart/vegeta/v12 v12.8.4
 	github.com/zgalor/weberr v0.6.0
-	gitlab.cee.redhat.com/service/uhc-clusters-service v0.0.12-0.20210201130243-cb9e230afef4
 	k8s.io/apimachinery v0.19.0
 )
 

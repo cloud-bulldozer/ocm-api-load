@@ -9,7 +9,6 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"gitlab.cee.redhat.com/service/uhc-clusters-service/pkg/api"
 )
 
 type CleanClustersTransport struct {
@@ -45,15 +44,21 @@ func (t *CleanClustersTransport) addToCleanup(request *http.Request, response *h
 			request.URL.String(), err)
 		return response
 	}
-	var cluster api.Cluster
+	var cluster map[string]interface{}
 	err = json.Unmarshal(body, &cluster)
 	if err != nil {
 		log.Errorf("Failed to unmarshal body of response for request %s %s: %v", request.Method,
 			request.URL.String(), err)
 		return response
 	}
+	clusterID, ok := cluster["id"]
+	if !ok {
+		log.Errorf("Failed to get cluster ID from body of response for request %s %s: %v", request.Method,
+			request.URL.String(), err)
+		return response
+	}
 
-	markClusterForCleanup(*cluster.ID, true)
+	markClusterForCleanup(clusterID.(string), true)
 	response.Body = ioutil.NopCloser(strings.NewReader(string(body)))
 	return response
 }
