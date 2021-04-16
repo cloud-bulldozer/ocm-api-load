@@ -7,12 +7,13 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/Rican7/retry"
+	"github.com/Rican7/retry/strategy"
+
 	sdk "github.com/openshift-online/ocm-sdk-go"
 	log "github.com/sirupsen/logrus"
 
 	errors "github.com/zgalor/weberr"
-
-	"gitlab.cee.redhat.com/service/uhc-clusters-service/test/api"
 )
 
 // createdClusterIDs maps the IDs of the cluster created by testing to a bool value for `deprovision`.
@@ -48,7 +49,7 @@ func DeleteCluster(id string, deprovision bool, connection *sdk.Connection) {
 	log.Infof("Deleting cluster '%s'", id)
 	// Send the request to delete the cluster
 	response, err := connection.Delete().
-		Path(fmt.Sprintf("%s/%s", ClustersEndpoint, id)).
+		Path(ClustersEndpoint+id).
 		Parameter("deprovision", deprovision).
 		Send()
 	if err != nil {
@@ -79,25 +80,40 @@ func CreateCluster(body string, gatewayConnection *sdk.Connection) (string, map[
 	if err != nil {
 		return "", nil, err
 	}
-	clusterID := api.DigString(data, "id")
-	log.Infof("Cluster '%s' created", clusterID)
-	return clusterID, data, nil
+	clusterID, ok := data["id"]
+	if !ok {
+		log.Errorln("ClusterID not present")
+	}
+	log.Infof("Cluster '%s' created", clusterID.(string))
+	return clusterID.(string), data, nil
 }
 
 func verifyClusterDeleted(clusterID string, connection *sdk.Connection) error {
 	log.Infof("verifying deleted cluster '%s'", clusterID)
-	getStatus, err := api.RunAttempt(func() (interface{}, bool) {
+	var forcedErr error
+	var getStatus int
+	err := retry.Retry(func(attempt uint) error {
 		getResponse, err := connection.Get().
-			Path(api.ClustersEndpoint + clusterID).
+			Path(ClustersEndpoint + clusterID).
 			Send()
-		if getResponse.Status() == 404 || err != nil {
-			return getResponse.Status(), false
+		if err != nil {
+			forcedErr = err
+			return nil
 		}
-		return getResponse.Status(), true
-	}, 300, time.Second)
+		if getResponse.Status() == 404 {
+			getStatus = getResponse.Status()
+			return nil
+		}
+		return errors.Errorf("Cluster still exists StatusCode: %d", getResponse.Status())
+	},
+		strategy.Wait(1*time.Second),
+		strategy.Limit(300))
 	if err != nil {
 		log.Errorf("failed to delete cluster '%s': %v", clusterID, err)
 		return err
+	}
+	if forcedErr != nil {
+		return fmt.Errorf("failed to wait for cluster '%s' to be archived", clusterID)
 	}
 	if getStatus != 404 {
 		return fmt.Errorf("failed to wait for cluster '%s' to be archived", clusterID)
