@@ -124,7 +124,7 @@ func verifyClusterDeleted(clusterID string, connection *sdk.Connection) error {
 
 // CreateFolder creates folder in the system
 func CreateFolder(path string) error {
-	log.Info("Creating result directory")
+	log.Infof("Creating '%s' directory", path)
 	folder, err := filepath.Abs(path)
 	if err != nil {
 		return err
