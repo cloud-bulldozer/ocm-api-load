@@ -224,22 +224,23 @@ func TestQuotaCost(options *helpers.TestOptions) error {
 
 	conn := options.Connection
 
-	orgs, err := conn.AccountsMgmt().V1().Organizations().List().Send()
+	acct, err := conn.AccountsMgmt().V1().CurrentAccount().Get().Send()
 	if err != nil {
 		return err
 	}
 
-	if orgs.Total() == 0 {
+	org, ok := acct.Body().GetOrganization()
+	if !ok {
 		return fmt.Errorf("no organizations where found for this account")
 	}
 
-	orgsIds := []string{}
-	for _, o := range orgs.Items().Slice() {
-		orgsIds = append(orgsIds, o.ID())
+	orgID, ok := org.GetID()
+	if !ok {
+		return fmt.Errorf("no organizations where found for this account")
 	}
 
-	log.Printf("Using Organization id: %s.", orgsIds[0])
-	options.Path = strings.Replace(options.Path, "{orgId}", orgsIds[0], 1)
+	log.Printf("Using Organization id: %s.", orgID)
+	options.Path = strings.Replace(options.Path, "{orgId}", orgID, 1)
 
 	return TestStaticEndpoint(options)
 
