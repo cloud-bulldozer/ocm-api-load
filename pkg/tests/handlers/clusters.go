@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/report"
@@ -18,7 +17,7 @@ func TestCreateCluster(options *helpers.TestOptions) error {
 
 	testName := options.TestName
 	targeter := generateCreateClusterTargeter(options.ID, options.Method, options.Path)
-	fileName := fmt.Sprintf("%s_%s-%s.json", options.ID, options.TestName, time.Now().Local().Format("2006-01-02"))
+	fileName := fmt.Sprintf("%s_%s.json", options.ID, options.TestName)
 	resFile, err := helpers.CreateFile(fileName, options.OutputDirectory)
 	if err != nil {
 		return err
