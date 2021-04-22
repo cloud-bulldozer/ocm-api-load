@@ -3,7 +3,7 @@ package tests
 import (
 	"fmt"
 	"log"
-	"path"
+	"net/http"
 	"time"
 
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
@@ -14,8 +14,6 @@ import (
 )
 
 func Run(
-	attacker *vegeta.Attacker,
-	metrics map[string]*vegeta.Metrics,
 	outputDirectory string,
 	duration time.Duration,
 	connection *sdk.Connection,
@@ -26,15 +24,29 @@ func Run(
 	testID := uuid.NewV4().String()
 
 	for _, t := range tests {
+
+		// Create an Attacker for each individual test. This is due to the
+		// fact that vegeta (and compatible parsers, such as benchmark-wrapper)
+		// expect the sequence to start at 0 for each result file. (Possibly a bug?)
+		connAttacker := vegeta.Client(&http.Client{Transport: connection})
+		attacker := vegeta.NewAttacker(connAttacker)
+
+		// Open a file and create an encoder that will be used to store the
+		// results for each test.
+		fileName := fmt.Sprintf("%s_%s.json", testID, t.TestName)
+		resultsFile, err := helpers.CreateFile(fileName, outputDirectory)
+		if err != nil {
+			return err
+		}
+		encoder := vegeta.NewJSONEncoder(resultsFile)
+
 		// Bind "Test Harness"
 		t.ID = testID
-		t.OutputDirectory = outputDirectory
-		t.ReportsDirectory = path.Join(outputDirectory, helpers.ReportsDirectory)
 		t.Attacker = attacker
-		t.Metrics = metrics
 		t.Connection = connection
 		t.Duration = duration
 		t.Rate = helpers.DefaultRate
+		t.Encoder = &encoder
 
 		// Go over the config file to find specifics for each test
 		if viper.InConfig(t.TestName) {
@@ -59,21 +71,20 @@ func Run(
 					return err
 				}
 			}
-			key := fmt.Sprintf("%s.write-report", t.TestName)
-			if viper.IsSet(key) {
-				writeReport := viper.GetBool(key)
-				t.WriteReport = writeReport
-			}
 		}
 
-		// Execute the Test
-		log.Printf("-------------------------------------------------------------------------------")
 		log.Printf("Executing Test: %s", t.TestName)
 		log.Printf("Rate: %s", t.Rate.String())
 		log.Printf("Duration: %s", t.Duration.String())
-		log.Printf("Path: %s", t.Path)
-		log.Printf("Report: %v", t.WriteReport)
-		err := t.Handler(&t)
+		log.Printf("Endpoint: %s", t.Path)
+		err = t.Handler(&t)
+		if err != nil {
+			return err
+		}
+
+		// Cleanup (cannot defer as it must happen for each test in the loop)
+		log.Printf("Results written to: %s", fileName)
+		err = resultsFile.Close()
 		if err != nil {
 			return err
 		}

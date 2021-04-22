@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path"
 	"time"
 
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
@@ -92,23 +91,14 @@ func main() {
 		os.Exit(1)
 	}
 	defer helpers.Cleanup(connection)
-	metrics := make(map[string]*vegeta.Metrics)
-
-	connAttacker = vegeta.Client(&http.Client{Transport: connection})
-	attacker := vegeta.NewAttacker(connAttacker)
 
 	err = helpers.CreateFolder(outputDirectory)
 	if err != nil {
 		fmt.Printf("Error creating output directory: %s", err)
 		os.Exit(1)
 	}
-	err = helpers.CreateFolder(path.Join(outputDirectory, helpers.ReportsDirectory))
-	if err != nil {
-		fmt.Printf("Error creating reports directory: %s", err)
-		os.Exit(1)
-	}
 
-	if err := tests.Run(attacker, metrics, outputDirectory, duration, connection, viper.Sub("tests")); err != nil {
+	if err := tests.Run(outputDirectory, duration, connection, viper.Sub("tests")); err != nil {
 		fmt.Printf("Error running create cluster load test: %v", err)
 		os.Exit(1)
 	}

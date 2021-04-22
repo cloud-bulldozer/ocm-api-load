@@ -23,12 +23,9 @@ type TestOptions struct {
 	WriteReport bool // Determines if the test should also write a report
 
 	// Test "Infrastructure"
-	ID              string                         // Unique UUID of a given test-suite execution.
-	Handler         func(*TestOptions) (err error) // Function which tests the given endpoint
-	Metrics         map[string]*vegeta.Metrics     // Stores results from each Test
-	Attacker        *vegeta.Attacker
-	OutputDirectory string // Directory to write vegeta results as a File
-	// TODO make cofigurable???
-	ReportsDirectory string // Directory to write vegeta reports, always `OutputDirectory/reports`
-	Connection       *sdk.Connection
+	ID         string                         // Unique UUID of a given test-suite execution.
+	Handler    func(*TestOptions) (err error) // Function which tests the given endpoint
+	Attacker   *vegeta.Attacker
+	Connection *sdk.Connection
+	Encoder    *vegeta.Encoder // Encodes results and writes them to a File
 }

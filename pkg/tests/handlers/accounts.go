@@ -9,8 +9,6 @@ import (
 	"time"
 
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
-	"github.com/cloud-bulldozer/ocm-api-load/pkg/report"
-	"github.com/cloud-bulldozer/ocm-api-load/pkg/result"
 	sdk "github.com/openshift-online/ocm-sdk-go"
 	v1 "github.com/openshift-online/ocm-sdk-go/accountsmgmt/v1"
 	uuid "github.com/satori/go.uuid"
@@ -27,30 +25,8 @@ func TestRegisterNewCluster(options *helpers.TestOptions) error {
 	// building valid HTTP Requests
 	targeter := generateClusterRegistrationTargeter(options.Path, options.Connection)
 
-	// Create a file to store results
-	fileName := fmt.Sprintf("%s_%s.json", options.ID, testName)
-	resultFile, err := helpers.CreateFile(fileName, options.OutputDirectory)
-	if err != nil {
-		return err
-	}
-	defer resultFile.Close()
-
-	// Store Metrics from load test
-	options.Metrics[testName] = new(vegeta.Metrics)
-	defer options.Metrics[testName].Close()
-
 	for res := range options.Attacker.Attack(targeter, options.Rate, options.Duration, testName) {
-		result.Write(res, resultFile)
-		options.Metrics[testName].Add(res)
-	}
-
-	log.Printf("Results written to: %s", fileName)
-
-	if options.WriteReport {
-		err = report.Write(fmt.Sprintf("%s_%s-report", options.ID, options.TestName), options.ReportsDirectory, options.Metrics[testName])
-		if err != nil {
-			return err
-		}
+		options.Encoder.Encode(res)
 	}
 
 	return nil
@@ -62,33 +38,11 @@ func TestRegisterExistingCluster(options *helpers.TestOptions) error {
 	quantity := options.Rate.Freq
 	targeter := generateClusterReRegistrationTargeter(quantity, options.Path, options.Connection)
 
-	fileName := fmt.Sprintf("%s_%s.json", options.ID, testName)
-	resultFile, err := helpers.CreateFile(fileName, options.OutputDirectory)
-	if err != nil {
-		return err
-	}
-	defer resultFile.Close()
-
-	// Store Metrics from load test
-	options.Metrics[testName] = new(vegeta.Metrics)
-	defer options.Metrics[testName].Close()
-
 	for res := range options.Attacker.Attack(targeter, options.Rate, options.Duration, testName) {
-		result.Write(res, resultFile)
-		options.Metrics[testName].Add(res)
-	}
-
-	log.Printf("Results written to: %s/%s\n", options.OutputDirectory, fileName)
-
-	if options.WriteReport {
-		err = report.Write(fmt.Sprintf("%s_%s-report", options.ID, options.TestName), options.ReportsDirectory, options.Metrics[testName])
-		if err != nil {
-			return err
-		}
+		options.Encoder.Encode(res)
 	}
 
 	return nil
-
 }
 
 // getAuthorizationToken will fetch and return the current user's Authorization
@@ -248,14 +202,6 @@ func TestQuotaCost(options *helpers.TestOptions) error {
 
 // Test Cluster Authorizations
 func TestClusterAuthorizations(options *helpers.TestOptions) error {
-	testName := options.TestName
-	// Vegeta Results File
-	fileName := fmt.Sprintf("%s_%s.json", options.ID, testName)
-	resultFile, err := helpers.CreateFile(fileName, options.OutputDirectory)
-	if err != nil {
-		return err
-	}
-	defer resultFile.Close()
 
 	targeter := func(t *vegeta.Target) error {
 
@@ -268,23 +214,9 @@ func TestClusterAuthorizations(options *helpers.TestOptions) error {
 		return nil
 	}
 
-	// Create a Metrics bucket for this test run
-	options.Metrics[testName] = new(vegeta.Metrics)
-	defer options.Metrics[testName].Close()
-
 	// Execute the HTTP Requests; repeating as needed to meet the specified duration
 	for res := range options.Attacker.Attack(targeter, options.Rate, options.Duration, options.TestName) {
-		result.Write(res, resultFile)
-		options.Metrics[testName].Add(res)
-	}
-
-	log.Printf("Results written to: %s", fileName)
-
-	if options.WriteReport {
-		err = report.Write(fmt.Sprintf("%s_%s-report", options.ID, options.TestName), options.ReportsDirectory, options.Metrics[testName])
-		if err != nil {
-			return err
-		}
+		options.Encoder.Encode(res)
 	}
 
 	return nil
