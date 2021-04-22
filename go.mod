@@ -4,14 +4,20 @@ go 1.15
 
 require (
 	github.com/Rican7/retry v0.1.0
+	github.com/c2h5oh/datasize v0.0.0-20200825124411-48ed595a09d2 // indirect
+	github.com/influxdata/tdigest v0.0.1 // indirect
+	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/onsi/ginkgo v1.15.0 // indirect
 	github.com/onsi/gomega v1.10.5 // indirect
 	github.com/openshift-online/ocm-sdk-go v0.1.165
 	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/viper v1.6.1
+	github.com/tsenart/go-tsz v0.0.0-20180814235614-0bd30b3df1c3 // indirect
+	github.com/tsenart/vegeta v11.4.0+incompatible // indirect
 	github.com/tsenart/vegeta/v12 v12.8.4
 	github.com/zgalor/weberr v0.6.0
+	golang.org/x/net v0.0.0-20210421230115-4e50805a0758 // indirect
 	k8s.io/apimachinery v0.19.0
 )
 

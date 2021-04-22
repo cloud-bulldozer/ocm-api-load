@@ -35,10 +35,24 @@ func TestStaticEndpoint(options *helpers.TestOptions) error {
 	options.Metrics[testName] = new(vegeta.Metrics)
 	defer options.Metrics[testName].Close()
 
+	// Experimental:
+
+	// Create the File to Write the Results to
+	fileName2 := fmt.Sprintf("%s_%s.gob", options.ID, testName)
+	out, err := helpers.CreateFile(fileName2, options.OutputDirectory)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	// Create an encoder
+	enc := vegeta.NewEncoder(out)
+
 	// Execute the HTTP Requests; repeating as needed to meet the specified duration
 	for res := range options.Attacker.Attack(targeter, options.Rate, options.Duration, options.TestName) {
 		result.Write(res, resultFile)
 		options.Metrics[testName].Add(res)
+		enc.Encode(res)
 	}
 
 	log.Printf("Results written to: %s", fileName)

@@ -3,6 +3,7 @@ package tests
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"path"
 	"time"
 
@@ -26,6 +27,13 @@ func Run(
 	testID := uuid.NewV4().String()
 
 	for _, t := range tests {
+
+		// TODO: Create an Attacker for each individual test. This is due to the
+		//       fact that vegeta (and compatible parsers, such as benchmark-wrapper)
+		//       except the sequence to start at 0 for each result file. (Possibly a bug?)
+		connAttacker := vegeta.Client(&http.Client{Transport: connection})
+		attacker = vegeta.NewAttacker(connAttacker)
+
 		// Bind "Test Harness"
 		t.ID = testID
 		t.OutputDirectory = outputDirectory
