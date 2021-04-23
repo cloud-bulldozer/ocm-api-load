@@ -67,7 +67,6 @@ Each test can contain this options:
 - freq: Number of requests to execute in a unit of time.
 - per: Unit of the request frequency. ("ns", "us" (or "µs"), "ms", "s", "m", "h")
 - duration: Override duration for the test. (A positive integer accompanied of a valid unit)
-- writeReport: Override write report option for the test. ("true" or "false")
 
 ### Obligatory options
 
@@ -121,7 +120,6 @@ tests:
     freq: 10
     per: "s"
     duration: "20s"
-    writeReport: true
   get-current-account:
     freq: 6
     per: "m"

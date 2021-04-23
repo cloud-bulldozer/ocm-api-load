@@ -14,13 +14,12 @@ import (
 type TestOptions struct {
 
 	// The Test
-	TestName    string // name of the test. e.g. get-access-token
-	Path        string // path of the endpoint. e.g. /api/v1/foo
-	Method      string // HTTP Method
-	Body        []byte // Only really used by generic test handlers
-	Rate        vegeta.Rate
-	Duration    time.Duration
-	WriteReport bool // Determines if the test should also write a report
+	TestName string // name of the test. e.g. get-access-token
+	Path     string // path of the endpoint. e.g. /api/v1/foo
+	Method   string // HTTP Method
+	Body     []byte // Only really used by generic test handlers
+	Rate     vegeta.Rate
+	Duration time.Duration
 
 	// Test "Infrastructure"
 	ID         string                         // Unique UUID of a given test-suite execution.
