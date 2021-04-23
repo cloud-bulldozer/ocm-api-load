@@ -1,7 +1,7 @@
 on: [push, pull_request]
 name: CI
 jobs:
-  ci:
+  go-ci:
     strategy:
       matrix:
         go-version: [1.15.x]
@@ -18,3 +18,20 @@ jobs:
         run: go vet ./...
       - name: Test
         run: go test -race -v ./...
+  python-ci:
+    runs-on: ubuntu-latest
+    name: Lint
+    steps:
+      - name: Check out source repository
+        uses: actions/checkout@v2
+      - name: Set up Python environment
+        uses: actions/setup-python@v1
+        with:
+          python-version: "3.8"
+      - uses: BSFishy/pip-action@v1
+        with:
+          requirements: requirements.txt
+      - name: flake8 Lint
+        uses: py-actions/flake8@v1
+        with:
+          path: "export_report.py"
