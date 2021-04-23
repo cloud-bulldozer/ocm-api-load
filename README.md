@@ -17,20 +17,38 @@ To get all modules to local cache run
 Compile using `make` and run as a simple binary:
 
 ```sh
-./ocm-api-load --config-file /path/to/config
+./ocm-load-test --test-id=foo --ocm-token=$OCM_TOKEN --duration=20m --rate=5/s --output-path=./results --test-names="<test_name>[,...]"
+
 ```
 
-if your `config-file` is named `ocm-api-load.yaml` and it in the same
+```sh
+./ocm-load-test --config-file /path/to/config
+```
+
+if your `config-file` is named `config.yaml` and it in the same
 path as your binary, it will be autodetected and you could run by just calling it:
 
 ```sh
-./ocm-api-load
+./ocm-load-test
 ```
 
-### Command options
+### Flags
 
-- config-file: Path to the configuration file.
-- token-url: URL to obtain a token.
+> Note: Flags always take precedence over config file.
+>> Default values don't count for precedence.
+
+```
+      --config-file string     config file (default "config.yaml")
+      --duration int           Duration of each individual run in minutes. (default 1)
+      --gateway-url string     Gateway url to perform the test against (default "https://api.integration.openshift.com")
+  -h, --help                   help for ocm-api-load
+      --ocm-token string       OCM Authorization token
+      --ocm-token-url string   Token URL (default "https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token")
+      --output-path string     Output directory for result and report files (default "results")
+      --rate string            Rate of the attack. Format example 5/s. (Available units 'ns', 'us', 'ms', 's', 'm', 'h') (default "1/s")
+      --test-id string         Unique ID to identify the test run. UUID is recommended (default "dc049b1d-92b4-420c-9eb7-34f30229ef46")
+      --test-names strings     Names for the tests to be run. (default [all])
+```
 
 ## Tests
 
@@ -52,31 +70,34 @@ path as your binary, it will be autodetected and you could run by just calling i
 
 ### Global options
 
-- token: Offline token for authentication.
-- gateway-url: Gateway URL.
+- ocm-token: OCM Authorization token
+- ocm-token-url: Token URL (default "https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token")
+- gateway-url: Gateway url to perform the test against (default "https://api.integration.openshift.com")
 - client:
   - id: OpenID client identifier.
   - secret: OpenID client secret.
-- duration-minutes: How long should the load test take.
 - output-path: Path to output results.
+- duration: Duration of each individual run in minutes. (default 1)
+- rate: Rate of the attack. Format example 5/s. (Available units 'ns', 'us', 'ms', 's', 'm', 'h') (default "1/s")
+- test-id: Unique ID to identify the test run. UUID is recommended (default "dc049b1d-92b4-420c-9eb7-34f30229ef46")
+- tests: List of the tests to run. Empty list means all.
 
 ### Test options
 
 Each test can contain this options:
 
-- freq: Number of requests to execute in a unit of time.
-- per: Unit of the request frequency. ("ns", "us" (or "µs"), "ms", "s", "m", "h")
+- rate: Rate of the attack. Format example 5/s. (Available units 'ns', 'us', 'ms', 's', 'm', 'h') (default "1/s")
 - duration: Override duration for the test. (A positive integer accompanied of a valid unit)
 
 ### Obligatory options
 
-- token
+- ocm-token
 - gateway-url
 
 ### Defaults
 
 - output-path: set to `./results`
-- duration-minutes: set to `1` minute
+- duration: set to `1` minute
 
 ### Minimal yaml config file
 
@@ -88,51 +109,4 @@ gateway-url: https://api.my-env.openshift.com
 
 ### Full yaml config file
 
-```yaml
----
-token: xxxXXXyyyYYYzzzZZZ           # Offline token for authentication.
-gateway-url: http://localhost:8000  # Gateway URL.
-client:
-  - id: cloud-services              # OpenID client identifier.
-  - secret: "secure-secret"         # OpenID client secret.
-duration-minutes: 1                 # How long should the load test take.
-output-path: "./results"            # path to output results.
-tests:
-  self-access-token:
-    freq: 1000
-    per: "h"
-  list-subscriptions:
-    freq: 2000
-    per: "h"
-  access-review:
-    freq: 100
-    per: "s"
-  register-new-cluster:
-    freq: 1000
-    per: "h"
-  register-existing-cluster:
-    freq: 25
-    per: "s"
-  create-cluster:
-    freq: 10
-    per: "s"
-  list-clusters:
-    freq: 10
-    per: "s"
-    duration: "20s"
-  get-current-account:
-    freq: 6
-    per: "m"
-  quota-cost:
-    freq: 1000
-    per: "h"
-  resource-review:
-    freq: 2000
-    per: "h"
-  cluster-authorizations:
-    freq: 2000
-    per: "h"
-  self-terms-review:
-    freq: 10
-    per: "s"
-```
+See [example](./config.example.yaml)
