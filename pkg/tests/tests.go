@@ -53,11 +53,10 @@ var tests = []helpers.TestOptions{
 		Handler:  handlers.TestCreateCluster,
 	},
 	{
-		TestName:    "list-clusters",
-		Path:        "/api/clusters_mgmt/v1/clusters",
-		Method:      http.MethodGet,
-		Handler:     handlers.TestStaticEndpoint,
-		WriteReport: true,
+		TestName: "list-clusters",
+		Path:     "/api/clusters_mgmt/v1/clusters",
+		Method:   http.MethodGet,
+		Handler:  handlers.TestStaticEndpoint,
 	},
 	{
 		TestName: "get-current-account",
@@ -85,11 +84,10 @@ var tests = []helpers.TestOptions{
 		Handler:  handlers.TestClusterAuthorizations,
 	},
 	{
-		TestName:    "self-terms-review",
-		Path:        "/api/authorizations/v1/self_terms_review",
-		Method:      http.MethodPost,
-		Handler:     handlers.TestStaticEndpoint,
-		WriteReport: false,
+		TestName: "self-terms-review",
+		Path:     "/api/authorizations/v1/self_terms_review",
+		Method:   http.MethodPost,
+		Handler:  handlers.TestStaticEndpoint,
 	},
 }
 

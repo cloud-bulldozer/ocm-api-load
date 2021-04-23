@@ -29,7 +29,6 @@ tests:
     freq: 10
     per: "s"
     duration: 20s
-    write-report: true
   get-current-account:
     freq: 6
     per: "m"

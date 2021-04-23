@@ -3,11 +3,8 @@ package handlers
 import (
 	"bytes"
 	"fmt"
-	"log"
 
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
-	"github.com/cloud-bulldozer/ocm-api-load/pkg/report"
-	"github.com/cloud-bulldozer/ocm-api-load/pkg/result"
 
 	v1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
 	vegeta "github.com/tsenart/vegeta/v12/lib"
@@ -17,26 +14,9 @@ func TestCreateCluster(options *helpers.TestOptions) error {
 
 	testName := options.TestName
 	targeter := generateCreateClusterTargeter(options.ID, options.Method, options.Path)
-	fileName := fmt.Sprintf("%s_%s.json", options.ID, options.TestName)
-	resFile, err := helpers.CreateFile(fileName, options.OutputDirectory)
-	if err != nil {
-		return err
-	}
 
-	options.Metrics[testName] = new(vegeta.Metrics)
-	defer options.Metrics[testName].Close()
 	for res := range options.Attacker.Attack(targeter, options.Rate, options.Duration, testName) {
-		options.Metrics[testName].Add(res)
-		result.Write(res, resFile)
-	}
-
-	log.Printf("Results written to: %s", fileName)
-
-	if options.WriteReport {
-		err = report.Write(fmt.Sprintf("%s_%s-report", options.ID, options.TestName), options.ReportsDirectory, options.Metrics[testName])
-		if err != nil {
-			return err
-		}
+		options.Encoder.Encode(res)
 	}
 
 	return nil
