@@ -8,22 +8,23 @@ import (
 
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
 	sdk "github.com/openshift-online/ocm-sdk-go"
-	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/viper"
 	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
 
 func Run(
+	testID string,
 	outputDirectory string,
 	duration time.Duration,
+	rate vegeta.Rate,
 	connection *sdk.Connection,
 	viper *viper.Viper) error {
 
-	// testId provides a common value to associate all output data from running
-	// the full test suite with a single test run.
-	testID := uuid.NewV4().String()
-
 	for _, t := range tests {
+		// Check if the test is set to run
+		if !viper.InConfig(t.TestName) && !viper.InConfig("all") {
+			continue
+		}
 
 		// Create an Attacker for each individual test. This is due to the
 		// fact that vegeta (and compatible parsers, such as benchmark-wrapper)
@@ -44,33 +45,23 @@ func Run(
 		t.ID = testID
 		t.Attacker = attacker
 		t.Connection = connection
-		t.Duration = duration
-		t.Rate = helpers.DefaultRate
 		t.Encoder = &encoder
 
-		// Go over the config file to find specifics for each test
-		if viper.InConfig(t.TestName) {
-			// Obtain frequency and per values
-			freq := viper.GetInt(fmt.Sprintf("%s.freq", t.TestName))
-			per := viper.GetString(fmt.Sprintf("%s.per", t.TestName))
-			// To parse the duration we need to add the 1 to set a unit of i.
-			// Eg.: 1s, 1m ,1h
-			perDuration, err := time.ParseDuration("1" + per)
-			if err != nil {
-				log.Fatalf("parsing rate for test %s: %v%s", t.TestName, freq, per)
-				return err
-			}
-			// Create the vegeta rate with the config values
-			t.Rate = vegeta.Rate{Freq: freq, Per: perDuration}
-			// Check for an override on the test duration
-			dur := viper.GetString(fmt.Sprintf("%s.duration", t.TestName))
-			if dur != "" {
-				t.Duration, err = time.ParseDuration(dur)
-				if err != nil {
-					log.Fatalf("parsing duration override for test %s: %s", t.TestName, dur)
-					return err
-				}
-			}
+		// Create the vegeta rate with the config values
+		r, err := helpers.ParseRate(viper.GetString(fmt.Sprintf("%s.rate", t.TestName)))
+		if err != nil {
+			log.Printf("error parsing rate for test %s: %s. Using default", t.TestName, fmt.Sprintf("%s.rate", t.TestName))
+			t.Rate = rate
+		} else {
+			t.Rate = r
+		}
+		// Check for an override on the test duration
+		dur := viper.GetInt(fmt.Sprintf("%s.duration", t.TestName))
+		if dur == 0 {
+			// Using default
+			t.Duration = duration
+		} else {
+			t.Duration = time.Duration(dur) * time.Minute
 		}
 
 		log.Printf("Executing Test: %s", t.TestName)
