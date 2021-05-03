@@ -1,9 +1,11 @@
 package helpers
 
 import (
+	"context"
 	"time"
 
 	sdk "github.com/openshift-online/ocm-sdk-go"
+	"github.com/openshift-online/ocm-sdk-go/logging"
 	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
 
@@ -27,4 +29,6 @@ type TestOptions struct {
 	Attacker   *vegeta.Attacker
 	Connection *sdk.Connection
 	Encoder    *vegeta.Encoder // Encodes results and writes them to a File
+	Logger     logging.Logger
+	Context    context.Context
 }

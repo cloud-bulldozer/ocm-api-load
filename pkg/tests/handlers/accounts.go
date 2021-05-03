@@ -3,13 +3,11 @@ package handlers
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
-	sdk "github.com/openshift-online/ocm-sdk-go"
 	v1 "github.com/openshift-online/ocm-sdk-go/accountsmgmt/v1"
 	uuid "github.com/satori/go.uuid"
 	vegeta "github.com/tsenart/vegeta/v12/lib"
@@ -23,7 +21,7 @@ func TestRegisterNewCluster(options *helpers.TestOptions) error {
 	testName := options.TestName
 	// Fetch the authorization token and create a dynamic Target generator for
 	// building valid HTTP Requests
-	targeter := generateClusterRegistrationTargeter(options.Path, options.Connection)
+	targeter := generateClusterRegistrationTargeter(options)
 
 	for res := range options.Attacker.Attack(targeter, options.Rate, options.Duration, testName) {
 		options.Encoder.Encode(res)
@@ -36,7 +34,7 @@ func TestRegisterExistingCluster(options *helpers.TestOptions) error {
 
 	testName := options.TestName
 	quantity := options.Rate.Freq
-	targeter := generateClusterReRegistrationTargeter(quantity, options.Path, options.Connection)
+	targeter := generateClusterReRegistrationTargeter(quantity, options)
 
 	for res := range options.Attacker.Attack(targeter, options.Rate, options.Duration, testName) {
 		options.Encoder.Encode(res)
@@ -47,24 +45,24 @@ func TestRegisterExistingCluster(options *helpers.TestOptions) error {
 
 // getAuthorizationToken will fetch and return the current user's Authorization
 //Token which is required by certain endpoints such as Cluster Registration.
-func getAuthorizationToken(connection *sdk.Connection) string {
-	result, err := connection.AccountsMgmt().V1().AccessToken().Post().Send()
+func getAuthorizationToken(options *helpers.TestOptions) string {
+	result, err := options.Connection.AccountsMgmt().V1().AccessToken().Post().Send()
 	if err != nil {
-		log.Fatalf("Unable to retrieve authorization token: %s", err)
+		options.Logger.Error(options.Context, "Unable to retrieve authorization token: %s", err)
 	}
 	body := result.Body().Auths()
 	token := body["cloud.openshift.com"].Auth()
 	if len(token) == 0 {
-		log.Println("Authorization token appears to be empty. Other requests may not succeed.")
+		options.Logger.Warn(options.Context, "Authorization token appears to be empty. Other requests may not succeed.")
 	} else {
-		log.Println("Successfully fetched Authorization Token")
+		options.Logger.Info(options.Context, "Successfully fetched Authorization Token")
 	}
 	return token
 }
 
 // generateClusterReRegistrationTargeter registers fake clusters and then
 // returns a targeter which uses those fake clusters.
-func generateClusterReRegistrationTargeter(qty int, url string, connection *sdk.Connection) vegeta.Targeter {
+func generateClusterReRegistrationTargeter(qty int, options *helpers.TestOptions) vegeta.Targeter {
 
 	clusterIds := make([]string, qty)
 	var currentTarget = 0
@@ -72,32 +70,32 @@ func generateClusterReRegistrationTargeter(qty int, url string, connection *sdk.
 	// Cache the Authorization Token to avoid retrieving it with every request
 	var authorizationToken = ""
 	if len(authorizationToken) == 0 {
-		authorizationToken = getAuthorizationToken(connection)
+		authorizationToken = getAuthorizationToken(options)
 	}
 
 	// Register multiple mock clusters and store their IDs
-	log.Printf("Registering %d clusters to use for re-registration test", qty)
+	options.Logger.Info(options.Context, "Registering %d clusters to use for re-registration test", qty)
 	for i := range clusterIds {
 
 		clusterID := uuid.NewV4().String()
 
 		body, err := v1.NewClusterRegistrationRequest().AuthorizationToken(authorizationToken).ClusterID(clusterID).Build()
 		if err != nil {
-			log.Fatalln("Unable to build cluster registration request: ", err)
+			options.Logger.Fatal(options.Context, "Unable to build cluster registration request: %v", err)
 		}
 
 		var rawBody bytes.Buffer
 		err = v1.MarshalClusterRegistrationRequest(body, &rawBody)
 		if err != nil {
-			log.Fatalln("Unable to serialize cluster registration request body: ", err)
+			options.Logger.Fatal(options.Context, "Unable to serialize cluster registration request body: ", err)
 		}
 
-		resp, err := connection.AccountsMgmt().V1().ClusterRegistrations().Post().Request(body).Send()
+		resp, err := options.Connection.AccountsMgmt().V1().ClusterRegistrations().Post().Request(body).Send()
 		if err != nil {
-			log.Fatalln("Unable to register cluster: ", err)
+			options.Logger.Fatal(options.Context, "Unable to register cluster: ", err)
 		}
 
-		log.Printf("[%d/%d] Registered Cluster: '%s'. Response: %d\n", i, len(clusterIds), clusterID, resp.Status())
+		options.Logger.Info(options.Context, "[%d/%d] Registered Cluster: '%s'. Response: %d\n", i, len(clusterIds), clusterID, resp.Status())
 		clusterIds[i] = clusterID
 
 		// Avoid hitting rate limiting
@@ -121,7 +119,7 @@ func generateClusterReRegistrationTargeter(qty int, url string, connection *sdk.
 		}
 
 		t.Method = http.MethodPost
-		t.URL = url
+		t.URL = options.Path
 		t.Body = rawBody.Bytes()
 
 		// Loop through Cluster IDs
@@ -140,12 +138,12 @@ func generateClusterReRegistrationTargeter(qty int, url string, connection *sdk.
 // generateClusterRegistrationTargeter returns a targeter which will create a
 // unique Cluster Registration request body each time using a valid auth token
 // and a UUID for the Cluster's ID to ensure uniqueness.
-func generateClusterRegistrationTargeter(url string, connection *sdk.Connection) vegeta.Targeter {
+func generateClusterRegistrationTargeter(options *helpers.TestOptions) vegeta.Targeter {
 
 	// Cache the Authorization Token to avoid retrieving it with every request
 	var authorizationToken = ""
 	if len(authorizationToken) == 0 {
-		authorizationToken = getAuthorizationToken(connection)
+		authorizationToken = getAuthorizationToken(options)
 	}
 
 	targeter := func(t *vegeta.Target) error {
@@ -164,7 +162,7 @@ func generateClusterRegistrationTargeter(url string, connection *sdk.Connection)
 		}
 
 		t.Method = http.MethodPost
-		t.URL = url
+		t.URL = options.Path
 		t.Body = rawBody.Bytes()
 
 		return nil
@@ -193,7 +191,7 @@ func TestQuotaCost(options *helpers.TestOptions) error {
 		return fmt.Errorf("no organizations where found for this account")
 	}
 
-	log.Printf("Using Organization id: %s.", orgID)
+	options.Logger.Info(options.Context, "Using Organization id: %s.", orgID)
 	options.Path = strings.Replace(options.Path, "{orgId}", orgID, 1)
 
 	return TestStaticEndpoint(options)
@@ -209,7 +207,7 @@ func TestClusterAuthorizations(options *helpers.TestOptions) error {
 		clusterId := uuid.NewV4().String()
 		t.Method = http.MethodPost
 		t.URL = options.Path
-		t.Body = clusterAuthorizationsBody(clusterId)
+		t.Body = clusterAuthorizationsBody(clusterId, options)
 
 		return nil
 	}
@@ -222,7 +220,7 @@ func TestClusterAuthorizations(options *helpers.TestOptions) error {
 	return nil
 }
 
-func clusterAuthorizationsBody(clusterID string) []byte {
+func clusterAuthorizationsBody(clusterID string, options *helpers.TestOptions) []byte {
 	buff := &bytes.Buffer{}
 	reservedResource := v1.NewReservedResource().
 		ResourceName(helpers.M5XLargeResource).
@@ -242,13 +240,13 @@ func clusterAuthorizationsBody(clusterID string) []byte {
 		Resources(reservedResource).
 		Build()
 	if err != nil {
-		log.Printf("building `cluster-authorizations` request: %s", err)
+		options.Logger.Info(options.Context, "building `cluster-authorizations` request: %s", err)
 		return buff.Bytes()
 	}
 	err = v1.MarshalClusterAuthorizationRequest(clusterAuthReq, buff)
 	if err != nil {
 
-		log.Printf("marshaling `cluster-authorizations` request: %s", err)
+		options.Logger.Error(options.Context, "marshaling `cluster-authorizations` request: %s", err)
 	}
 	return buff.Bytes()
 }

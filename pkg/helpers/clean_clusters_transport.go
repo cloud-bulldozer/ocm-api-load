@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -8,11 +9,13 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/openshift-online/ocm-sdk-go/logging"
 )
 
 type CleanClustersTransport struct {
 	Wrapped http.RoundTripper
+	Logger  logging.Logger
+	Context context.Context
 }
 
 func (t *CleanClustersTransport) RoundTrip(request *http.Request) (*http.Response, error) {
@@ -21,7 +24,7 @@ func (t *CleanClustersTransport) RoundTrip(request *http.Request) (*http.Respons
 	if t.isCreateCluster(request) {
 		request, manipulated, err = t.manipulateRequest(request)
 		if err != nil {
-			log.Errorf("Failed to manipulate request for cleanup: %v", err)
+			t.Logger.Error(t.Context, "Failed to manipulate request for cleanup: %v", err)
 		}
 	}
 	response, err := t.Wrapped.RoundTrip(request)
@@ -40,25 +43,25 @@ func (t *CleanClustersTransport) RoundTrip(request *http.Request) (*http.Respons
 func (t *CleanClustersTransport) addToCleanup(request *http.Request, response *http.Response) *http.Response {
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		log.Errorf("Failed to read body of response for request %s %s: %v", request.Method,
+		t.Logger.Error(t.Context, "Failed to read body of response for request %s %s: %v", request.Method,
 			request.URL.String(), err)
 		return response
 	}
 	var cluster map[string]interface{}
 	err = json.Unmarshal(body, &cluster)
 	if err != nil {
-		log.Errorf("Failed to unmarshal body of response for request %s %s: %v", request.Method,
+		t.Logger.Error(t.Context, "Failed to unmarshal body of response for request %s %s: %v", request.Method,
 			request.URL.String(), err)
 		return response
 	}
 	clusterID, ok := cluster["id"]
 	if !ok {
-		log.Errorf("Failed to get cluster ID from body of response for request %s %s: %v", request.Method,
+		t.Logger.Error(t.Context, "Failed to get cluster ID from body of response for request %s %s: %v", request.Method,
 			request.URL.String(), err)
 		return response
 	}
 
-	markClusterForCleanup(clusterID.(string), true)
+	markClusterForCleanup(clusterID.(string), true, t.Logger, t.Context)
 	response.Body = ioutil.NopCloser(strings.NewReader(string(body)))
 	return response
 }
@@ -68,24 +71,24 @@ func (t *CleanClustersTransport) removeFromCleanup(request *http.Request) {
 	url := urlParts[0]
 	parts := strings.Split(url, "/")
 	clusterID := parts[len(parts)-1]
-	log.Infof("Removing cluster '%s' from cleanup", clusterID)
+	t.Logger.Info(t.Context, "Removing cluster '%s' from cleanup", clusterID)
 	delete(createdClusterIDs, clusterID)
 }
 
 func (t *CleanClustersTransport) manipulateRequest(request *http.Request) (*http.Request, bool, error) {
 	body, err := ioutil.ReadAll(request.Body)
 	if err != nil {
-		log.Errorf("Failed to read body of cluster for request %s %s: %v",
+		t.Logger.Error(t.Context, "Failed to read body of cluster for request %s %s: %v",
 			request.Method, request.URL.String(), err)
 		return request, false, err
 	}
 	newBody, err := addTestProperties(string(body))
 	if err != nil {
-		log.Errorf("Failed to add test properties to cluster for request %s %s: %v",
+		t.Logger.Error(t.Context, "Failed to add test properties to cluster for request %s %s: %v",
 			request.Method, request.URL.String(), err)
 		return request, false, err
 	}
-	log.Infof("%s %s: %s", request.Method, request.URL.String(), newBody)
+	t.Logger.Info(t.Context, "%s %s: %s", request.Method, request.URL.String(), newBody)
 	request.Body = ioutil.NopCloser(strings.NewReader(newBody))
 	request.ContentLength = int64(len(newBody))
 	return request, true, nil
@@ -101,8 +104,8 @@ func (t *CleanClustersTransport) isDeleteCluster(request *http.Request) bool {
 	return parts[len(parts)-2] == "clusters" && request.Method == "DELETE"
 }
 
-func markClusterForCleanup(clusterID string, deprovision bool) {
-	log.Infof("Marking cluster '%s' for cleanup with 'deprovision'=%v", clusterID, deprovision)
+func markClusterForCleanup(clusterID string, deprovision bool, logger logging.Logger, ctx context.Context) {
+	logger.Info(ctx, "Marking cluster '%s' for cleanup with 'deprovision'=%v", clusterID, deprovision)
 	createdClusterIDs[clusterID] = deprovision
 }
 
