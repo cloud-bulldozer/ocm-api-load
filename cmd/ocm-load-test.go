@@ -27,6 +27,15 @@ var (
 	gatewayUrl  string
 	testNames   []string
 	verbose     bool
+
+	// These are specific to the `create cluster` test.
+	// TODO: Refactor the test-suite in a way where variables specific to only
+	//       a single test aren't squeezed in with generic variables used by
+	//       all tests.
+	ccsAccountID string
+	ccsAccessKey string
+	ccsSecretKey string
+	ccsRegion    string
 )
 
 const (
@@ -61,6 +70,10 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&rate, "rate", "1/s", "Rate of the attack. Format example 5/s. (Available units 'ns', 'us', 'ms', 's', 'm', 'h')")
 	rootCmd.PersistentFlags().StringSliceVar(&testNames, "test-names", []string{}, "Names for the tests to be run.")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "set this flag to activate verbose logging.")
+	rootCmd.PersistentFlags().StringVar(&ccsAccountID, "ccs-account-id", "", "AWS Account ID for CCS User")
+	rootCmd.PersistentFlags().StringVar(&ccsAccessKey, "ccs-access-key", "", "AWS Access Key for CCS User")
+	rootCmd.PersistentFlags().StringVar(&ccsSecretKey, "ccs-secret-key", "", "AWS Secret Key for CCS User")
+	rootCmd.PersistentFlags().StringVar(&ccsRegion, "ccs-region", "", "AWS Region for the 'create-cluster' Test")
 	rootCmd.AddCommand(cmd.NewVersionCommand())
 }
 
@@ -131,6 +144,35 @@ func run(cmd *cobra.Command, args []string) error {
 	// If no Flag or Config is passed all test should run
 	if len(viper.GetStringSlice("test-names")) == 0 && len(viper.GetStringMap("tests")) == 0 {
 		viper.Set("tests.all", map[string]interface{}{})
+	}
+
+	// Require CCS Credentials if `create-cluster` test is going to be be ran
+	// TODO: Perhaps we can introduce an optional "pre-check" for each test?
+	// TODO: Validate credentials work before using them since the affected test
+	//       may not be ran until a lot of other tests are performed.
+	//       (A pre-flight check, if you will)
+	isCCSRequired := false
+	if viper.Get("tests.all") != nil {
+		isCCSRequired = true
+	}
+	for _, testName := range viper.GetStringSlice("test-names") {
+		if testName == "create-cluster" {
+			isCCSRequired = true
+		}
+	}
+	if isCCSRequired {
+		if len(viper.GetString("ccsAccountID")) == 0 {
+			logger.Fatal(cmd.Context(), "ccsAccountID is required to run the create-cluster test.")
+		}
+		if len(viper.GetString("ccsAccessKey")) == 0 {
+			logger.Fatal(cmd.Context(), "ccsAccessKey is required to run the create-cluster test.")
+		}
+		if len(viper.GetString("ccsSecretKey")) == 0 {
+			logger.Fatal(cmd.Context(), "ccsSecretKey is required to run the create-cluster test.")
+		}
+		if len(viper.GetString("ccsRegion")) == 0 {
+			logger.Fatal(cmd.Context(), "ccsRegion is required to run the create-cluster test.")
+		}
 	}
 
 	if err := tests.Run(viper.GetString("test-id"),

@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	sdk "github.com/openshift-online/ocm-sdk-go"
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/logging"
+	sdk "github.com/openshift-online/ocm-sdk-go"
 	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
 
@@ -31,4 +31,22 @@ type TestOptions struct {
 	Encoder    *vegeta.Encoder // Encodes results and writes them to a File
 	Logger     logging.Logger
 	Context    context.Context
+
+	// Test-Specific Options
+	// TODO: Find a better way to pass these values to the individual tests
+	//       as this pattern could overcomplicate and significantly grow this
+	//       struct over time.
+	CCSAccessKey string
+	CCSSecretKey string
+	CCSAccountID string
+	CCSRegion    string
+}
+
+// AWSOptions is used to specify configuration options required when creating
+// (fake) clusters in a given AWS account.
+type AWSOptions struct {
+	CCSAccessKey string
+	CCSSecretKey string
+	CCSAccountID string
+	Region       string
 }

@@ -13,7 +13,15 @@ import (
 func TestCreateCluster(options *helpers.TestOptions) error {
 
 	testName := options.TestName
-	targeter := generateCreateClusterTargeter(options.ID, options.Method, options.Path)
+
+	awsOptions := &helpers.AWSOptions{
+		CCSAccessKey: options.CCSAccessKey,
+		CCSSecretKey: options.CCSSecretKey,
+		CCSAccountID: options.CCSAccountID,
+		Region:       options.CCSRegion,
+	}
+
+	targeter := generateCreateClusterTargeter(options.ID, options.Method, options.Path, awsOptions)
 
 	for res := range options.Attacker.Attack(targeter, options.Rate, options.Duration, testName) {
 		options.Encoder.Encode(res)
@@ -25,7 +33,8 @@ func TestCreateCluster(options *helpers.TestOptions) error {
 // Generates a targeter for the "POST /api/clusters_mgmt/v1/clusters" endpoint
 // with monotonic increasing indexes.
 // The clusters created are "fake clusters", that is, do not consume any cloud-provider infrastructure.
-func generateCreateClusterTargeter(ID, method, url string) vegeta.Targeter {
+func generateCreateClusterTargeter(ID, method, url string, awsOptions *helpers.AWSOptions) vegeta.Targeter {
+
 	idx := 0
 
 	// This will take the first 4 characters of the UUID
@@ -41,7 +50,14 @@ func generateCreateClusterTargeter(ID, method, url string) vegeta.Targeter {
 			Name(fmt.Sprintf("perf-%s-%d", id, idx)).
 			Properties(fakeClusterProps).
 			MultiAZ(true).
-			Region(v1.NewCloudRegion().ID(helpers.DefaultAWSRegion)).
+			Region(v1.NewCloudRegion().ID(awsOptions.Region)).
+			CCS(v1.NewCCS().Enabled(true)).
+			AWS(
+				v1.NewAWS().
+					AccessKeyID(awsOptions.CCSAccessKey).
+					SecretAccessKey(awsOptions.CCSSecretKey).
+					AccountID(awsOptions.CCSAccountID),
+			).
 			Build()
 		if err != nil {
 			return err
