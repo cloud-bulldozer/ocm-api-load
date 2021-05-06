@@ -1,14 +1,15 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/cmd"
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/tests"
+	"github.com/openshift-online/ocm-sdk-go/logging"
 	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/cobra"
 
@@ -25,6 +26,7 @@ var (
 	rate        string
 	gatewayUrl  string
 	testNames   []string
+	verbose     bool
 )
 
 const (
@@ -47,10 +49,6 @@ var rootCmd = &cobra.Command{
 	RunE:  run,
 }
 
-func Execute() {
-	cobra.CheckErr(rootCmd.Execute())
-}
-
 func init() {
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVar(&configFile, "config-file", "config.yaml", "config file")
@@ -62,6 +60,7 @@ func init() {
 	rootCmd.PersistentFlags().IntVar(&duration, "duration", 1, "Duration of each individual run in minutes.")
 	rootCmd.PersistentFlags().StringVar(&rate, "rate", "1/s", "Rate of the attack. Format example 5/s. (Available units 'ns', 'us', 'ms', 's', 'm', 'h')")
 	rootCmd.PersistentFlags().StringSliceVar(&testNames, "test-names", []string{}, "Names for the tests to be run.")
+	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "set this flag to activate verbose logging.")
 	rootCmd.AddCommand(cmd.NewVersionCommand())
 }
 
@@ -86,28 +85,37 @@ func initConfig() {
 }
 
 func run(cmd *cobra.Command, args []string) error {
-	if viper.GetString("ocm-token") == "" {
-		return fmt.Errorf("ocm-token is a necessary configuration")
+	logger, err := logging.NewGoLoggerBuilder().
+		Debug(viper.GetBool("verbose")).
+		Build()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Can't build logger: %v\n", err)
+		os.Exit(1)
 	}
 
-	err := helpers.CreateFolder(viper.GetString("output-path"))
-	if err != nil {
-		return fmt.Errorf("creating output directory: %s", err)
+	if viper.GetString("ocm-token") == "" {
+		logger.Fatal(cmd.Context(), "ocm-token is a necessary configuration")
 	}
-	log.Printf("Using output directory: %s", viper.GetString("output-path"))
+	err = helpers.CreateFolder(viper.GetString("output-path"), logger)
+	if err != nil {
+		logger.Fatal(cmd.Context(), "creating api connection: %v", err)
+	}
+	logger.Info(cmd.Context(), "Using output directory: %s", viper.GetString("output-path"))
 
 	connection, err := helpers.BuildConnection(viper.GetString("gateway-url"),
 		viper.GetString("client.id"),
 		viper.GetString("client.secret"),
-		viper.GetString("ocm-token"))
+		viper.GetString("ocm-token"),
+		logger,
+		cmd.Context())
 	if err != nil {
-		return fmt.Errorf("creating api connection: %v", err)
+		logger.Fatal(cmd.Context(), "creating api connection: %v", err)
 	}
 	defer helpers.Cleanup(connection)
 
 	vegetaRate, err := helpers.ParseRate(viper.GetString("rate"))
 	if err != nil {
-		return fmt.Errorf("parsing rate: %v", err)
+		logger.Fatal(cmd.Context(), "parsing rate: %v", err)
 	}
 
 	// Flag overrides config
@@ -130,15 +138,18 @@ func run(cmd *cobra.Command, args []string) error {
 		time.Duration(viper.GetInt("duration"))*time.Minute,
 		vegetaRate,
 		connection,
-		viper.Sub("tests")); err != nil {
-		return fmt.Errorf("running load test: %v", err)
+		viper.Sub("tests"),
+		logger,
+		cmd.Context()); err != nil {
+		logger.Fatal(cmd.Context(), "running load test: %v", err)
 	}
 
 	return nil
 }
 
 func main() {
-	if err := rootCmd.Execute(); err != nil {
+	ctx := context.Background()
+	if err := rootCmd.ExecuteContext(ctx); err != nil {
 		os.Exit(1)
 	}
 }

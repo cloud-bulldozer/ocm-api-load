@@ -1,13 +1,14 @@
 package tests
 
 import (
+	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
 	sdk "github.com/openshift-online/ocm-sdk-go"
+	"github.com/openshift-online/ocm-sdk-go/logging"
 	"github.com/spf13/viper"
 	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
@@ -18,7 +19,9 @@ func Run(
 	duration time.Duration,
 	rate vegeta.Rate,
 	connection *sdk.Connection,
-	viper *viper.Viper) error {
+	viper *viper.Viper,
+	logger logging.Logger,
+	ctx context.Context) error {
 
 	for _, t := range tests {
 		// Check if the test is set to run
@@ -46,15 +49,23 @@ func Run(
 		t.Attacker = attacker
 		t.Connection = connection
 		t.Encoder = &encoder
+		t.Logger = logger
+		t.Context = ctx
 
 		// Create the vegeta rate with the config values
-		r, err := helpers.ParseRate(viper.GetString(fmt.Sprintf("%s.rate", t.TestName)))
-		if err != nil {
-			log.Printf("error parsing rate for test %s: %s. Using default", t.TestName, fmt.Sprintf("%s.rate", t.TestName))
+		if viper.GetString(fmt.Sprintf("%s.rate", t.TestName)) == "" {
+			logger.Info(ctx, "no specific rate for test %s. Using default", t.TestName)
 			t.Rate = rate
 		} else {
-			t.Rate = r
+			r, err := helpers.ParseRate(viper.GetString(fmt.Sprintf("%s.rate", t.TestName)))
+			if err != nil {
+				logger.Warn(ctx, "error parsing rate for test %s: %s. Using default", t.TestName, fmt.Sprintf("%s.rate", t.TestName))
+				t.Rate = rate
+			} else {
+				t.Rate = r
+			}
 		}
+
 		// Check for an override on the test duration
 		dur := viper.GetInt(fmt.Sprintf("%s.duration", t.TestName))
 		if dur == 0 {
@@ -64,17 +75,17 @@ func Run(
 			t.Duration = time.Duration(dur) * time.Minute
 		}
 
-		log.Printf("Executing Test: %s", t.TestName)
-		log.Printf("Rate: %s", t.Rate.String())
-		log.Printf("Duration: %s", t.Duration.String())
-		log.Printf("Endpoint: %s", t.Path)
+		logger.Info(ctx, "Executing Test: %s", t.TestName)
+		logger.Info(ctx, "Rate: %s", t.Rate.String())
+		logger.Info(ctx, "Duration: %s", t.Duration.String())
+		logger.Info(ctx, "Endpoint: %s", t.Path)
 		err = t.Handler(&t)
 		if err != nil {
 			return err
 		}
 
 		// Cleanup (cannot defer as it must happen for each test in the loop)
-		log.Printf("Results written to: %s", fileName)
+		logger.Info(ctx, "Results written to: %s", fileName)
 		err = resultsFile.Close()
 		if err != nil {
 			return err
