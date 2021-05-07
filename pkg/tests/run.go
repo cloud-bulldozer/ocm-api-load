@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
+	"github.com/cloud-bulldozer/ocm-api-load/pkg/logging"
 	sdk "github.com/openshift-online/ocm-sdk-go"
-	"github.com/openshift-online/ocm-sdk-go/logging"
 	"github.com/spf13/viper"
 	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
