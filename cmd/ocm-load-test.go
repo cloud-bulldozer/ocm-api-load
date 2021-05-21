@@ -8,8 +8,8 @@ import (
 
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/cmd"
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
+	"github.com/cloud-bulldozer/ocm-api-load/pkg/logging"
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/tests"
-	"github.com/openshift-online/ocm-sdk-go/logging"
 	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/cobra"
 

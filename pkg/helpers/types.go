@@ -5,7 +5,7 @@ import (
 	"time"
 
 	sdk "github.com/openshift-online/ocm-sdk-go"
-	"github.com/openshift-online/ocm-sdk-go/logging"
+	"github.com/cloud-bulldozer/ocm-api-load/pkg/logging"
 	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
 

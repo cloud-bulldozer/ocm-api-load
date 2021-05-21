@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/openshift-online/ocm-sdk-go/logging"
+	"github.com/cloud-bulldozer/ocm-api-load/pkg/logging"
 )
 
 type CleanClustersTransport struct {

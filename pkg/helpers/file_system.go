@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/openshift-online/ocm-sdk-go/logging"
+	"github.com/cloud-bulldozer/ocm-api-load/pkg/logging"
 )
 
 // CreateFolder creates folder in the system

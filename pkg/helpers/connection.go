@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	sdk "github.com/openshift-online/ocm-sdk-go"
-	"github.com/openshift-online/ocm-sdk-go/logging"
+	"github.com/cloud-bulldozer/ocm-api-load/pkg/logging"
 )
 
 // BuildConnection build the vegeta connection
