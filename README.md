@@ -1,6 +1,7 @@
 # OCM API LOAD TEST
 
 ![Go Version](https://img.shields.io/badge/go%20version-%3E=1.15-61CFDD.svg?style=flat-square)
+![Python Version](https://img.shields.io/badge/python%20version-%3E=3.7-61CFDD.svg?style=flat-square&color=brightgreen)
 
 A set of load tests for [OCM](https://github.com/openshift-online/ocm-api-model)'s clusters-service, based on vegeta.
 
@@ -110,3 +111,37 @@ gateway-url: https://api.my-env.openshift.com
 ### Full yaml config file
 
 See [example](./config.example.yaml)
+
+## Reporting
+
+### Rquirements
+
+#### External
+
+`vegeta` executable is necessary
+
+`$ go get -u github.com/tsenart/vegeta`
+
+#### python requirements
+
+`$ pip3 install -r requirements.txt`
+
+### Usage
+
+To generate the report run the following command:
+
+`python3 export_report.py /tests/2021-05-18`
+
+The first argument should be the path to the folder where the `results` folder is located.
+
+### Graph a specific file
+
+`python3 export_report.py graph /tests/2021-05-18/results/access_review.json`
+
+This should open the browser with an interactive Graph for access review.
+
+### Generate `vegeta` reports
+
+`python3 export_report.py report /tests/2021-05-18`
+
+This will generate all the `vegeta` report files for each result file
