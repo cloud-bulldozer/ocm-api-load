@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
+	"github.com/cloud-bulldozer/ocm-api-load/pkg/types"
 	v1 "github.com/openshift-online/ocm-sdk-go/accountsmgmt/v1"
 	uuid "github.com/satori/go.uuid"
 	vegeta "github.com/tsenart/vegeta/v12/lib"
@@ -16,7 +17,7 @@ import (
 // TestRegisterNewCluster performs a load test on the endpoint responsible for
 // handling Registering New Clusters. This endpoint is typically used by Hive
 // and not directly accessed by most clients.
-func TestRegisterNewCluster(options *helpers.TestOptions) error {
+func TestRegisterNewCluster(options *types.TestOptions) error {
 
 	testName := options.TestName
 	// Fetch the authorization token and create a dynamic Target generator for
@@ -30,7 +31,7 @@ func TestRegisterNewCluster(options *helpers.TestOptions) error {
 	return nil
 }
 
-func TestRegisterExistingCluster(options *helpers.TestOptions) error {
+func TestRegisterExistingCluster(options *types.TestOptions) error {
 
 	testName := options.TestName
 	quantity := options.Rate.Freq
@@ -45,7 +46,7 @@ func TestRegisterExistingCluster(options *helpers.TestOptions) error {
 
 // getAuthorizationToken will fetch and return the current user's Authorization
 //Token which is required by certain endpoints such as Cluster Registration.
-func getAuthorizationToken(options *helpers.TestOptions) string {
+func getAuthorizationToken(options *types.TestOptions) string {
 	result, err := options.Connection.AccountsMgmt().V1().AccessToken().Post().Send()
 	if err != nil {
 		options.Logger.Error(options.Context, "Unable to retrieve authorization token: %s", err)
@@ -62,7 +63,7 @@ func getAuthorizationToken(options *helpers.TestOptions) string {
 
 // generateClusterReRegistrationTargeter registers fake clusters and then
 // returns a targeter which uses those fake clusters.
-func generateClusterReRegistrationTargeter(qty int, options *helpers.TestOptions) vegeta.Targeter {
+func generateClusterReRegistrationTargeter(qty int, options *types.TestOptions) vegeta.Targeter {
 
 	clusterIds := make([]string, qty)
 	var currentTarget = 0
@@ -138,7 +139,7 @@ func generateClusterReRegistrationTargeter(qty int, options *helpers.TestOptions
 // generateClusterRegistrationTargeter returns a targeter which will create a
 // unique Cluster Registration request body each time using a valid auth token
 // and a UUID for the Cluster's ID to ensure uniqueness.
-func generateClusterRegistrationTargeter(options *helpers.TestOptions) vegeta.Targeter {
+func generateClusterRegistrationTargeter(options *types.TestOptions) vegeta.Targeter {
 
 	// Cache the Authorization Token to avoid retrieving it with every request
 	var authorizationToken = ""
@@ -172,7 +173,7 @@ func generateClusterRegistrationTargeter(options *helpers.TestOptions) vegeta.Ta
 }
 
 // Test quota cost
-func TestQuotaCost(options *helpers.TestOptions) error {
+func TestQuotaCost(options *types.TestOptions) error {
 
 	conn := options.Connection
 
@@ -199,7 +200,7 @@ func TestQuotaCost(options *helpers.TestOptions) error {
 }
 
 // Test Cluster Authorizations
-func TestClusterAuthorizations(options *helpers.TestOptions) error {
+func TestClusterAuthorizations(options *types.TestOptions) error {
 
 	targeter := func(t *vegeta.Target) error {
 
@@ -220,7 +221,7 @@ func TestClusterAuthorizations(options *helpers.TestOptions) error {
 	return nil
 }
 
-func clusterAuthorizationsBody(clusterID string, options *helpers.TestOptions) []byte {
+func clusterAuthorizationsBody(clusterID string, options *types.TestOptions) []byte {
 	buff := &bytes.Buffer{}
 	reservedResource := v1.NewReservedResource().
 		ResourceName(helpers.M5XLargeResource).

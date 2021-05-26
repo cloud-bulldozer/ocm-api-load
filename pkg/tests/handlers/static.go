@@ -1,11 +1,11 @@
 package handlers
 
 import (
-	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
+	"github.com/cloud-bulldozer/ocm-api-load/pkg/types"
 	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
 
-func TestStaticEndpoint(options *helpers.TestOptions) error {
+func TestStaticEndpoint(options *types.TestOptions) error {
 
 	// Specify the HTTP request(s) that will be executed
 	target := vegeta.Target{
