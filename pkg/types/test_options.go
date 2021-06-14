@@ -1,11 +1,11 @@
-package helpers
+package types
 
 import (
 	"context"
 	"time"
 
-	sdk "github.com/openshift-online/ocm-sdk-go"
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/logging"
+	sdk "github.com/openshift-online/ocm-sdk-go"
 	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
 

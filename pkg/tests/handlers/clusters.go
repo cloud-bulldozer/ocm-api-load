@@ -5,12 +5,13 @@ import (
 	"fmt"
 
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
+	"github.com/cloud-bulldozer/ocm-api-load/pkg/types"
 
 	v1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
 	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
 
-func TestCreateCluster(options *helpers.TestOptions) error {
+func TestCreateCluster(options *types.TestOptions) error {
 
 	testName := options.TestName
 	targeter := generateCreateClusterTargeter(options.ID, options.Method, options.Path)

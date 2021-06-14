@@ -7,6 +7,7 @@ import (
 
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/tests/handlers"
+	"github.com/cloud-bulldozer/ocm-api-load/pkg/types"
 	authv1 "github.com/openshift-online/ocm-sdk-go/authorizations/v1"
 )
 
@@ -14,7 +15,7 @@ import (
 // They are written this way to re-use functionality where possible and
 // hopefully make it easier to modify and/or extend given the declarative
 // style.
-var tests = []helpers.TestOptions{
+var tests = []types.TestOptions{
 	{
 		TestName: "self-access-token",
 		Path:     "/api/accounts_mgmt/v1/access_token",

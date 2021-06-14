@@ -41,6 +41,7 @@ path as your binary, it will be autodetected and you could run by just calling i
 ```
       --config-file string     config file (default "config.yaml")
       --duration int           Duration of each individual run in minutes. (default 1)
+      --cooldown int           Cooldown time between tests in seconds. (default 10 s)
       --gateway-url string     Gateway url to perform the test against (default "https://api.integration.openshift.com")
   -h, --help                   help for ocm-api-load
       --ocm-token string       OCM Authorization token
@@ -79,6 +80,7 @@ path as your binary, it will be autodetected and you could run by just calling i
   - secret: OpenID client secret.
 - output-path: Path to output results.
 - duration: Duration of each individual run in minutes. (default 1)
+- cooldown: Cooldown time between tests in seconds. (default 10 s)
 - rate: Rate of the attack. Format example 5/s. (Available units 'ns', 'us', 'ms', 's', 'm', 'h') (default "1/s")
 - test-id: Unique ID to identify the test run. UUID is recommended (default "dc049b1d-92b4-420c-9eb7-34f30229ef46")
 - tests: List of the tests to run. Empty list means all.
