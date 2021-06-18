@@ -14,6 +14,8 @@ func TestCreateCluster(options *helpers.TestOptions) error {
 
 	testName := options.TestName
 
+	fmt.Printf("Options: %+v\n", options)
+
 	awsOptions := &helpers.AWSOptions{
 		CCSAccessKey: options.CCSAccessKey,
 		CCSSecretKey: options.CCSSecretKey,
@@ -41,6 +43,8 @@ func generateCreateClusterTargeter(ID, method, url string, awsOptions *helpers.A
 	// Cluster Names must match the following regex:
 	// ^[a-z]([-a-z0-9]*[a-z0-9])?$
 	id := ID[:4]
+
+	fmt.Printf("AWS Options: %+v\n", awsOptions)
 
 	targeter := func(t *vegeta.Target) error {
 		fakeClusterProps := map[string]string{

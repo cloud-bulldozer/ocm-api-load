@@ -57,9 +57,13 @@ func Run(
 		//       a better way to pass these to the test(s) which requires them.
 		//       Don't forget to validate they are set on startup as opposed to
 		//       waiting for the dependent test to start running.
-		t.CCSAccessKey = viper.GetString("ccsAccounKey")
-		t.CCSSecretKey = viper.GetString("ccsSecretKey")
-		t.CCSAccountID = viper.GetString("ccsAccountID")
+		t.CCSAccessKey = viper.GetString("ccs-account-key")
+		t.CCSSecretKey = viper.GetString("ccs-secret-key")
+		t.CCSAccountID = viper.GetString("ccs-account-id")
+		t.CCSRegion = viper.GetString("ccs-region")
+
+		fmt.Printf("Test Options: %+v\n", t)
+		fmt.Printf("Test Option Access Key: %s", t.CCSAccessKey)
 
 		// Create the vegeta rate with the config values
 		if viper.GetString(fmt.Sprintf("%s.rate", t.TestName)) == "" {
