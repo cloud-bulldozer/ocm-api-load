@@ -86,25 +86,15 @@ func run(cmd *cobra.Command, args []string) error {
 		os.Exit(1)
 	}
 
-	if viper.GetString("ocm-token") == "" {
-		logger.Fatal(cmd.Context(), "ocm-token is a necessary configuration")
+	auths := viper.GetStringMap("ocm")["auths"]
+	if len(auths.([]interface{})) < 1 {
+		logger.Fatal(cmd.Context(), "at least one ocm token is a necessary configuration")
 	}
 	err = helpers.CreateFolder(viper.GetString("output-path"), logger)
 	if err != nil {
 		logger.Fatal(cmd.Context(), "creating api connection: %v", err)
 	}
 	logger.Info(cmd.Context(), "Using output directory: %s", viper.GetString("output-path"))
-
-	connection, err := helpers.BuildConnection(viper.GetString("gateway-url"),
-		viper.GetString("client.id"),
-		viper.GetString("client.secret"),
-		viper.GetString("ocm-token"),
-		logger,
-		cmd.Context())
-	if err != nil {
-		logger.Fatal(cmd.Context(), "creating api connection: %v", err)
-	}
-	defer helpers.Cleanup(connection)
 
 	vegetaRate, err := helpers.ParseRate(viper.GetString("rate"))
 	if err != nil {
@@ -132,8 +122,6 @@ func run(cmd *cobra.Command, args []string) error {
 		Duration:        time.Duration(viper.GetInt("duration")) * time.Minute,
 		Cooldown:        time.Duration(viper.GetInt("cooldown")) * time.Second,
 		Rate:            vegetaRate,
-		Connection:      connection,
-		Viper:           viper.Sub("tests"),
 		Logger:          logger,
 		Ctx:             cmd.Context(),
 	}

@@ -1,10 +1,29 @@
 ---
-ocm-token: xxxXXXyyyYYYzzzZZZ           # Offline token for authentication.
-ocm-token-url: https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token
 gateway-url: http://localhost:8000  # Gateway URL.
-client:
-  - id: cloud-services              # OpenID client identifier.
-  - secret: "secure-secret"         # OpenID client secret.
+ocm:
+  token-url: https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token
+  auths:
+    - token: xxxXXXyyyYYYzzzZZZ000       # 1st offline token for authentication.
+      client-id: cloud-services
+      client-secret: "secure-secret"
+    - token: xxxXXXyyyYYYzzzZZZ000       # 2st offline token for authentication.
+      client-id: cloud-services
+      client-secret: "secure-secret"
+    - token: xxxXXXyyyYYYzzzZZZ000       # 3st offline token for authentication.
+      client-id: cloud-services
+      client-secret: "secure-secret"
+    - token: xxxXXXyyyYYYzzzZZZ000       # 4st offline token for authentication.
+      client-id: cloud-services
+      client-secret: "secure-secret"
+aws:
+  - region: "us-west-1"
+    access-key: "ASD7ASFET65FFGHDFFS"
+    secret-access-key: "fjhgsadf6#$!@%&/dfghdfgdsdf"
+    accopunt-id: "123434565665"
+  - region: "us-west-1"
+    access-key: "ASD7ASFET65FFGHDFFS"
+    secret-access-key: "fjhgsadf6#$!@%&/dfghdfgdsdf"
+    accopunt-id: "123434565665"
 duration: 2
 cooldown: 10
 output-path: "./results"
