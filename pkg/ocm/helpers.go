@@ -1,4 +1,4 @@
-package helpers
+package ocm
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 
 	"github.com/Rican7/retry"
 	"github.com/Rican7/retry/strategy"
+	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
 
 	sdk "github.com/openshift-online/ocm-sdk-go"
 
@@ -47,7 +48,7 @@ func DeleteCluster(id string, deprovision bool, connection *sdk.Connection) {
 	connection.Logger().Info(context.TODO(), "Deleting cluster '%s'", id)
 	// Send the request to delete the cluster
 	response, err := connection.Delete().
-		Path(ClustersEndpoint+id).
+		Path(helpers.ClustersEndpoint+id).
 		Parameter("deprovision", deprovision).
 		Send()
 	if err != nil {
@@ -64,7 +65,7 @@ func DeleteCluster(id string, deprovision bool, connection *sdk.Connection) {
 
 func CreateCluster(body string, gatewayConnection *sdk.Connection) (string, map[string]interface{}, error) {
 	postResponse, err := gatewayConnection.Post().
-		Path(ClustersEndpoint).
+		Path(helpers.ClustersEndpoint).
 		String(body).
 		Send()
 	if err != nil {
@@ -92,7 +93,7 @@ func verifyClusterDeleted(clusterID string, connection *sdk.Connection) error {
 	var getStatus int
 	err := retry.Retry(func(attempt uint) error {
 		getResponse, err := connection.Get().
-			Path(ClustersEndpoint + clusterID).
+			Path(helpers.ClustersEndpoint + clusterID).
 			Send()
 		if err != nil {
 			forcedErr = err

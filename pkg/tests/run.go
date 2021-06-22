@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
+	"github.com/cloud-bulldozer/ocm-api-load/pkg/ocm"
+	"github.com/cloud-bulldozer/ocm-api-load/pkg/providers"
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/types"
 	"github.com/spf13/viper"
 	vegeta "github.com/tsenart/vegeta/v12/lib"
@@ -13,16 +15,26 @@ import (
 
 func Run(tc types.TestConfiguration) error {
 	logger := tc.Logger
+
+	tests_conf := viper.Sub("tests")
+	connections, err := ocm.BuildConnections(tc.Ctx, tc.Logger)
+	if err != nil {
+		return err
+	}
+
+	rrConnections := providers.NewRoundRobinProvider(connections...)
+
 	for i, t := range tests {
 		// Check if the test is set to run
-		if !tc.Viper.InConfig(t.TestName) && !tc.Viper.InConfig("all") {
+		if !tests_conf.InConfig(t.TestName) && !tests_conf.InConfig("all") {
 			continue
 		}
 
 		// Create an Attacker for each individual test. This is due to the
 		// fact that vegeta (and compatible parsers, such as benchmark-wrapper)
 		// expect the sequence to start at 0 for each result file. (Possibly a bug?)
-		connAttacker := vegeta.Client(&http.Client{Transport: tc.Connection})
+
+		connAttacker := vegeta.Client(&http.Client{Transport: rrConnections.GetItem().(ocm.Connector).GetConnection()})
 		attacker := vegeta.NewAttacker(connAttacker)
 
 		// Open a file and create an encoder that will be used to store the
@@ -37,19 +49,21 @@ func Run(tc types.TestConfiguration) error {
 		// Bind "Test Harness"
 		t.ID = tc.TestID
 		t.Attacker = attacker
-		t.Connection = tc.Connection
+		t.Connection = rrConnections.GetItem().(ocm.Connector).GetConnection()
 		t.Encoder = &encoder
 		t.Logger = logger
 		t.Context = tc.Ctx
 
 		// Create the vegeta rate with the config values
-		if viper.GetString(fmt.Sprintf("%s.rate", t.TestName)) == "" {
+		current_test_rate := tests_conf.GetString(fmt.Sprintf("%s.rate", t.TestName))
+		if current_test_rate == "" {
 			logger.Info(tc.Ctx, "no specific rate for test %s. Using default", t.TestName)
 			t.Rate = tc.Rate
 		} else {
-			r, err := helpers.ParseRate(viper.GetString(fmt.Sprintf("%s.rate", t.TestName)))
+			r, err := helpers.ParseRate(current_test_rate)
 			if err != nil {
-				logger.Warn(tc.Ctx, "error parsing rate for test %s: %s. Using default", t.TestName, fmt.Sprintf("%s.rate", t.TestName))
+				logger.Warn(tc.Ctx, "error parsing rate for test %s: %s. Using default", t.TestName,
+					current_test_rate)
 				t.Rate = tc.Rate
 			} else {
 				t.Rate = r
@@ -57,7 +71,7 @@ func Run(tc types.TestConfiguration) error {
 		}
 
 		// Check for an override on the test duration
-		dur := viper.GetInt(fmt.Sprintf("%s.duration", t.TestName))
+		dur := tests_conf.GetInt(fmt.Sprintf("%s.duration", t.TestName))
 		if dur == 0 {
 			// Using default
 			t.Duration = tc.Duration
@@ -81,7 +95,7 @@ func Run(tc types.TestConfiguration) error {
 			return err
 		}
 
-		if i+1 < len(tc.Viper.AllSettings()) {
+		if i+1 < len(tests_conf.AllSettings()) {
 			logger.Info(tc.Ctx, "Cooling down for next test for: %v s", tc.Cooldown.Seconds())
 			time.Sleep(tc.Cooldown)
 		}
