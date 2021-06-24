@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/types"
 
 	v1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
@@ -34,6 +33,14 @@ func generateCreateClusterTargeter(ID, method, url string) vegeta.Targeter {
 	// ^[a-z]([-a-z0-9]*[a-z0-9])?$
 	id := ID[:4]
 
+	// CCS is used to create fake clusters within the AWS
+	// environment supplied by the user executing this test.
+	// TODO: Fetch these values from the configuration file.
+	ccsRegion := "us-east-1"
+	ccsAccessKey := "example-access-key"
+	ccsSecretKey := "example-private-key"
+	ccsAccountID := "example-account-id"
+
 	targeter := func(t *vegeta.Target) error {
 		fakeClusterProps := map[string]string{
 			"fake_cluster": "true",
@@ -42,7 +49,14 @@ func generateCreateClusterTargeter(ID, method, url string) vegeta.Targeter {
 			Name(fmt.Sprintf("perf-%s-%d", id, idx)).
 			Properties(fakeClusterProps).
 			MultiAZ(true).
-			Region(v1.NewCloudRegion().ID(helpers.DefaultAWSRegion)).
+			Region(v1.NewCloudRegion().ID(ccsRegion)).
+			CCS(v1.NewCCS().Enabled(true)).
+			AWS(
+				v1.NewAWS().
+					AccessKeyID(ccsAccessKey).
+					SecretAccessKey(ccsSecretKey).
+					AccountID(ccsAccountID),
+			).
 			Build()
 		if err != nil {
 			return err

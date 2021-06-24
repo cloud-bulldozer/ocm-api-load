@@ -126,6 +126,10 @@ func run(cmd *cobra.Command, args []string) error {
 		viper.Set("tests.all", map[string]interface{}{})
 	}
 
+	// Ensure that the CCS Credentials are provided if create-cluster is going
+	// to be executed.
+	// TODO: Implement this based on the proposed YAML file schema
+
 	testConfig := types.TestConfiguration{
 		TestID:          viper.GetString("test-id"),
 		OutputDirectory: viper.GetString("output-path"),
