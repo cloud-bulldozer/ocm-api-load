@@ -6,7 +6,6 @@ import (
 
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/logging"
 	sdk "github.com/openshift-online/ocm-sdk-go"
-	"github.com/spf13/viper"
 	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
 
@@ -18,7 +17,6 @@ type TestConfiguration struct {
 	Cooldown        time.Duration
 	Rate            vegeta.Rate
 	Connection      *sdk.Connection
-	Viper           *viper.Viper
 	Logger          logging.Logger
 	Ctx             context.Context
 }

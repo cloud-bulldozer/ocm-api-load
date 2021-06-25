@@ -2,9 +2,12 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 
+	"github.com/cloud-bulldozer/ocm-api-load/pkg/logging"
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/types"
+	"github.com/spf13/viper"
 
 	v1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
 	vegeta "github.com/tsenart/vegeta/v12/lib"
@@ -13,7 +16,7 @@ import (
 func TestCreateCluster(options *types.TestOptions) error {
 
 	testName := options.TestName
-	targeter := generateCreateClusterTargeter(options.ID, options.Method, options.Path)
+	targeter := generateCreateClusterTargeter(options.ID, options.Method, options.Path, options.Context, options.Logger)
 
 	for res := range options.Attacker.Attack(targeter, options.Rate, options.Duration, testName) {
 		options.Encoder.Encode(res)
@@ -25,7 +28,7 @@ func TestCreateCluster(options *types.TestOptions) error {
 // Generates a targeter for the "POST /api/clusters_mgmt/v1/clusters" endpoint
 // with monotonic increasing indexes.
 // The clusters created are "fake clusters", that is, do not consume any cloud-provider infrastructure.
-func generateCreateClusterTargeter(ID, method, url string) vegeta.Targeter {
+func generateCreateClusterTargeter(ID, method, url string, ctx context.Context, log logging.Logger) vegeta.Targeter {
 	idx := 0
 
 	// This will take the first 4 characters of the UUID
@@ -33,13 +36,18 @@ func generateCreateClusterTargeter(ID, method, url string) vegeta.Targeter {
 	// ^[a-z]([-a-z0-9]*[a-z0-9])?$
 	id := ID[:4]
 
+	awsCreds := viper.Get("aws").([]interface{})
+	if len(awsCreds) < 1 {
+		log.Fatal(ctx, "No aws credentials found")
+	}
+
 	// CCS is used to create fake clusters within the AWS
 	// environment supplied by the user executing this test.
-	// TODO: Fetch these values from the configuration file.
-	ccsRegion := "us-east-1"
-	ccsAccessKey := "example-access-key"
-	ccsSecretKey := "example-private-key"
-	ccsAccountID := "example-account-id"
+	// Not fully supporting multi account now, so using first accaunt always
+	ccsRegion := awsCreds[0].(map[interface{}]interface{})["region"].(string)
+	ccsAccessKey := awsCreds[0].(map[interface{}]interface{})["access-key"].(string)
+	ccsSecretKey := awsCreds[0].(map[interface{}]interface{})["secret-access-key"].(string)
+	ccsAccountID := awsCreds[0].(map[interface{}]interface{})["account-id"].(string)
 
 	targeter := func(t *vegeta.Target) error {
 		fakeClusterProps := map[string]string{
