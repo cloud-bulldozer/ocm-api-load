@@ -122,6 +122,11 @@ func configAWS(ctx context.Context, logger *logging.GoLogger) {
 	if len(viper.Get("aws").([]interface{})) < 1 {
 		logger.Fatal(ctx, "AWS configuration not provided")
 	}
+
+	// If multiple accounts are passed.
+	if len(viper.Get("aws").([]interface{})) > 1 {
+		logger.Fatal(ctx, "Multiple AWS accounts are not supported at the moment")
+	}
 }
 
 func run(cmd *cobra.Command, args []string) error {
