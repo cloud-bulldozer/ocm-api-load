@@ -59,7 +59,7 @@ def generate_graphs(directory):
             regex = re.compile(r'[\w-]+_([\w-]+).(\w.+)')
             matches = regex.match(filename)
 
-            if 'reports' not in root and regex.match(filename) and \
+            if 'summaries' not in root and regex.match(filename) and \
                     matches.group(2) == 'json':
                 print('Generating graph for: {}'.format(matches.group(1)))
 
@@ -97,7 +97,22 @@ def generate_graphs(directory):
                     'mode': 'markers',
                     'transforms': [{
                         'type': 'groupby',
-                        'groups': df['code']
+                        'groups': df['code'],
+                        'color': 'code',
+                        'styles': [
+                            {'target': '0',
+                             'value': {'marker': {'color': 'coral',
+                                                  'symbol': 'triangle-down'}}},
+                            {'target': '200',
+                             'value': {'marker': {'color': 'LightSkyBlue'}}},
+                            {'target': '201',
+                             'value': {'marker': {'color': 'LightSkyBlue'}}},
+                            {'target': '400',
+                             'value': {'marker': {'color': 'crimsom',
+                                                  'symbol': 'diamond'}}},
+                            {'target': '500',
+                             'value': {'marker': {'color': 'darkred',
+                                                  'symbol': 'diamond-tall'}}}]
                     }]
                 }]
 
@@ -163,8 +178,24 @@ def show_graphs(directory, filename):
             'mode': 'markers',
             'transforms': [
                 {'type': 'groupby',
-                 'groups': df['code']}]
-                }]
+                 'groups': df['code'],
+                 'color': 'code',
+                 'styles': [
+                    {'target': '0',
+                     'value': {'marker': {'color': 'coral',
+                                          'symbol': 'triangle-down'}}},
+                    {'target': '200',
+                     'value': {'marker': {'color': 'LightSkyBlue'}}},
+                    {'target': '201',
+                     'value': {'marker': {'color': 'LightSkyBlue'}}},
+                    {'target': '400',
+                     'value': {'marker': {'color': 'crimsom',
+                                          'symbol': 'diamond'}}},
+                    {'target': '500',
+                     'value': {'marker': {'color': 'darkred',
+                                          'symbol': 'diamond-tall'}}}]
+                 }]
+            }]
 
         layout = {
             'title': '<b>Latency per Request: {}</b>'.format(matches.group(2)),
