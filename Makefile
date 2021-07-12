@@ -1,4 +1,4 @@
-VERSION := v0.1.0
+VERSION := v0.2.0
 # Enable Go modules:
 export GO111MODULE=on
 export GOPROXY=https://proxy.golang.org
