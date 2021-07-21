@@ -2,3 +2,4 @@ plotly
 pandas
 docx
 sqlalchemy
+elasticsearch
