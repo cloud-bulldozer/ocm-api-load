@@ -1,14 +1,17 @@
 #!/usr/bin/python3
 
 import argparse
+import json
 import os
 import re
 import subprocess
 import datetime
 import pickle
 import tarfile
+import logging
 import plotly.io as pio
 import pandas as pd
+import sys
 from sqlalchemy import create_engine
 from docx import Document
 from docx.shared import Inches
@@ -16,7 +19,12 @@ from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from googleapiclient.http import MediaFileUpload
+from elasticsearch import Elasticsearch, helpers
 
+
+# Configure Logging
+logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # If modifying these scopes, delete the file token.pickle.
 SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly',
@@ -25,7 +33,8 @@ SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly',
 
 def get_gdrive_service(args):
     if args.pickle is None and args.credentials is None:
-        print('ERROR: either `--creds` OR `--pickle` options are mandatory')
+        logger.error(
+            'ERROR: either `--creds` OR `--pickle` options are mandatory')
         exit(1)
 
     creds = None
@@ -61,7 +70,7 @@ def generate_graphs(directory):
 
             if 'summaries' not in root and regex.match(filename) and \
                     matches.group(2) == 'json':
-                print('Generating graph for: {}'.format(matches.group(1)))
+                logger.info(f'Generating graph for: {matches.group(1)}')
 
                 # Initializes database for current file in current directory
                 # Read by 20000 chunks
@@ -83,7 +92,7 @@ def generate_graphs(directory):
                             df = df.drop(c, axis=1)
 
                     j += 1
-                    print('completed {} rows'.format(j*chunk))
+                    logger.info(f'completed {j*chunk} rows')
 
                     df.to_sql('data', disk_engine, if_exists='append')
                     index_start = df.index[-1] + 1
@@ -135,7 +144,7 @@ def generate_graphs(directory):
                                 height=900,
                                 validate=False)
                 graphs[matches.group(1)] = root+'/'+matches.group(1)+".png"
-                print('Graph saved to: {}'.format(graphs[matches.group(1)]))
+                logger.info(f'Graph saved to: {graphs[matches.group(1)]}')
                 os.remove('{}/{}.db'.format(root, matches.group(1)))
     return graphs
 
@@ -164,7 +173,7 @@ def show_graphs(directory, filename):
                     df = df.drop(c, axis=1)
 
             j += 1
-            print('completed {} rows'.format(j*chunk))
+            logger.info(f'completed {j*chunk} rows')
 
             df.to_sql('data', disk_engine, if_exists='append')
             index_start = df.index[-1] + 1
@@ -222,7 +231,7 @@ def generate_summaries(directory):
     except FileNotFoundError:
         os.mkdir('{}/summaries'.format(directory))
     else:
-        print('Error with summaries folder.')
+        logger.error('Error with summaries folder.')
         exit(1)
 
     for root, _, files in os.walk(directory):
@@ -236,12 +245,12 @@ def generate_summaries(directory):
                                directory,
                                matches.group(1),
                                matches.group(2))
-                print('Generating summary for: {}'.format(matches.group(2)))
+                logger.info(f'Generating summary for: {matches.group(2)}')
                 subprocess.run(["vegeta", "report", "--type", "json",
                                 "--output",
                                 _summary_name,
                                 "{}/{}".format(root, filename)])
-                print('Summary saved to: {}'.format(_summary_name))
+                logger.info(f'Summary saved to: {_summary_name}')
 
 
 def read_summaries(directory):
@@ -256,7 +265,7 @@ def read_summaries(directory):
 
             if 'summaries' in root and regex.match(filename) and \
                     matches.group(2) == 'json':
-                print('Reading summary: {}'.format(filename))
+                logger.info(f'Reading summary: {filename}')
                 df = pd.read_json(root+'/'+filename, lines=True)
 
                 lat = df['latencies'][0]
@@ -358,7 +367,7 @@ def search(service, query):
     return result
 
 
-def createfolderGdrive(name, service, parent=''):
+def create_folder_gdrive(name, service, parent=''):
     """Creates a folder in GDrive if it doesn't exists already.
         - returns the fodler ID of the new or existing folder
     """
@@ -405,17 +414,17 @@ def upload_files(args):
                 uuid = matches.group(1)
                 tar.add(os.path.join(args.directory, filename),
                         arcname='requests/{}'.format(filename))
-                print('Added file {} to archive'.format(
+                logger.info('Added file {} to archive'.format(
                             os.path.join(args.directory, filename)))
     tar.close()
     # authenticate account
     service = get_gdrive_service(args)
 
     parentfoldername = 'ocm-load-tests'
-    parentfolderID = createfolderGdrive(parentfoldername, service)
+    parentfolderID = create_folder_gdrive(parentfoldername, service)
 
-    UUIDfolderID = createfolderGdrive(uuid, service, parentfolderID)
-    print("Folder ID:", UUIDfolderID)
+    UUIDfolderID = create_folder_gdrive(uuid, service, parentfolderID)
+    logger.info(f'Folder ID: {UUIDfolderID}')
 
     # upload requests.tar.g
     # metadata definition
@@ -426,13 +435,75 @@ def upload_files(args):
 
     # upload
     filename = str(os.path.join(args.directory, "requests.tar.gz"))
-    print('Uploading file {}....'.format(filename))
+    logger.info(f'Uploading file {filename}....')
     media = MediaFileUpload(filename,
                             mimetype='application/gzip',
                             resumable=True)
     file = service.files().create(body=file_metadata,
                                   media_body=media, fields='id').execute()
-    print("File created, id:", file.get("id"))
+    logger.info(f'File created, id: {file.get("id")}')
+
+
+def summarized_requests(path, index_name, test_id, test_name):
+    """
+    Yields a summarized request document for each line in a given Vegeta
+    results file.
+
+    The expected filename format is:
+    40f696b8-0258-4a29-99f6-2767bd453548_create-cluster.json
+    ^^^                                  ^^^
+    Test UUID                            Test Name
+    """
+
+    for line in open(path, 'r'):
+        req = json.loads(line)
+        doc = {
+            '_index': index_name,
+            'test_name': test_name,
+            'uuid': test_id,
+            'timestamp': req['timestamp'],
+            'code': req['code'],
+            'method': req['method'],
+            'url': req['url'],
+            'latency_ns': req['latency'],
+            'bytes_out': req['bytes_out'],
+            'bytes_in': req['bytes_in'],
+            'has_error': bool(req.get('error')),
+            'has_body': bool(req.get('body')),
+        }
+        yield doc
+
+
+def push_to_es(args):
+    """
+    The expected filename format is:
+    40f696b8-0258-4a29-99f6-2767bd453548_create-cluster.json
+    ^^^                                  ^^^
+    Test UUID                            Test Name
+    """
+    # ElasticSearch Client
+    es_host = os.getenv('ES')
+    es_index = args.index
+    assert es_host, "Did you forget to specify the environment variable `ES`?"
+    es = Elasticsearch(es_host, use_ssl=False, verify_certs=False)
+    logger.info('Connected to ElasticSearch')
+    es.indices.create(index=es_index, ignore=400)  # Ignore IndexAlreadyExists
+
+    for root, _, files in os.walk(args.directory):
+        for filename in files:
+            regex = re.compile(r'([\w-]+)_([\w-]+).(\w.+)')
+            matches = regex.match(filename)
+            if 'summaries' not in root and regex.match(filename) and \
+                    matches.group(3) == 'json':
+                test_id = matches.group(1)
+                test_name = matches.group(2)
+
+                logger.info("Indexing result file: %s" % filename)
+                helpers.bulk(es, summarized_requests(os.path.join(root,
+                                                                  filename),
+                                                     es_index,
+                                                     test_id,
+                                                     test_name))
 
 
 def main():
@@ -502,6 +573,14 @@ def main():
                                help='file with GDrive credentials. \
                                 (Ignored if pickle is provided)')
 
+    es_bulk = action_subparsers.add_parser("esbulk",
+                                           help="uploads results to ES",
+                                           parents=[parent_parser])
+
+    es_bulk.add_argument('--index',
+                         dest="index",
+                         help='ES index where the documents will be stored.')
+
     args = main_parser.parse_args()
 
     if args.action_command == 'graph':
@@ -510,7 +589,6 @@ def main():
         else:
             generate_graphs(args.directory)
     elif args.action_command == 'summary':
-        print('summary')
         generate_summaries(args.directory)
     elif args.action_command == 'report':
         graphs = generate_graphs(args.directory)
@@ -519,6 +597,8 @@ def main():
         write_docx(args.directory, summaries, graphs, args.filename)
     elif args.action_command == 'upload':
         upload_files(args)
+    elif args.action_command == 'esbulk':
+        push_to_es(args)
 
 
 if __name__ == "__main__":
