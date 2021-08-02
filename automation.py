@@ -1,62 +1,26 @@
 #!/usr/bin/python3
 
 import argparse
-import json
-import os
-import re
-import subprocess
 import datetime
-import pickle
-import tarfile
+import json
 import logging
-import plotly.io as pio
+import os
 import pandas as pd
+import plotly.io as pio
+import re
+import requests
+import subprocess
 import sys
+import tarfile
 from sqlalchemy import create_engine
 from docx import Document
 from docx.shared import Inches
-from googleapiclient.discovery import build
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
-from googleapiclient.http import MediaFileUpload
 from elasticsearch import Elasticsearch, helpers
 
 
 # Configure Logging
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-# If modifying these scopes, delete the file token.pickle.
-SCOPES = ['https://www.googleapis.com/auth/drive.metadata.readonly',
-          'https://www.googleapis.com/auth/drive.file']
-
-
-def get_gdrive_service(args):
-    if args.pickle is None and args.credentials is None:
-        logger.error(
-            'ERROR: either `--creds` OR `--pickle` options are mandatory')
-        exit(1)
-
-    creds = None
-    # The file token.pickle stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
-    if args.pickle is not None and os.path.exists(args.pickle):
-        with open(args.pickle, 'rb') as token:
-            creds = pickle.load(token)
-    # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                args.credentials, SCOPES)
-            creds = flow.run_local_server(port=0)
-        # Save the credentials for the next run
-        with open('token.pickle', 'wb') as token:
-            pickle.dump(creds, token)
-    # return Google Drive API service
-    return build('drive', 'v3', credentials=creds)
 
 
 def generate_graphs(directory):
@@ -347,64 +311,13 @@ def write_docx(directory, summaries, graphs, filename):
     document.save('{}/{}'.format(directory, filename))
 
 
-def search(service, query):
-    # search for the file
-    result = []
-    page_token = None
-    while True:
-        response = service.files().list(q=query,
-                                        spaces="drive",
-                                        fields="nextPageToken, \
-                                            files(id, name, mimeType)",
-                                        pageToken=page_token).execute()
-        # iterate over filtered files
-        for file in response.get("files", []):
-            result.append((file["id"], file["name"], file["mimeType"]))
-        page_token = response.get('nextPageToken', None)
-        if not page_token:
-            # no more files
-            break
-    return result
-
-
-def create_folder_gdrive(name, service, parent=''):
-    """Creates a folder in GDrive if it doesn't exists already.
-        - returns the fodler ID of the new or existing folder
-    """
-    filetype = "application/vnd.google-apps.folder"
-    # search for the named folder in GDrive
-    search_result = search(
-                        service,
-                        query="mimeType='{}' and name = '{}' and \
-                                trashed = false".format(
-                                filetype, name))
-
-    # If it exists return the ID
-    if len(search_result) > 0:
-        return search_result[0][0]
-    else:
-        # Create folder
-        folder_metadata = {
-            "name": name,
-            "mimeType": filetype
-        }
-        # Check if it has parents
-        if parent != '':
-            folder_metadata['parents'] = [parent]
-
-        file = service.files().create(
-                    body=folder_metadata,
-                    fields="id").execute()
-
-        return file.get("id")
-
-
 def upload_files(args):
     """
     Creates a folder and uploads the requests.tar.gz to it
     """
     uuid = ''
-    tar = tarfile.open(os.path.join(args.directory, "requests.tar.gz"), "w|gz")
+    tar_name = 'requests.tar.gz'
+    tar = tarfile.open(os.path.join(args.directory, tar_name), "w|gz")
     for root, _, files in os.walk(args.directory):
         for filename in files:
             regex = re.compile(r'([\w-]+)_([\w-]+).(\w.+)')
@@ -417,31 +330,41 @@ def upload_files(args):
                 logger.info('Added file {} to archive'.format(
                             os.path.join(args.directory, filename)))
     tar.close()
-    # authenticate account
-    service = get_gdrive_service(args)
 
-    parentfoldername = 'ocm-load-tests'
-    parentfolderID = create_folder_gdrive(parentfoldername, service)
+    # Obtain current running diretory
+    exec_folder = os.getcwd()
 
-    UUIDfolderID = create_folder_gdrive(uuid, service, parentfolderID)
-    logger.info(f'Folder ID: {UUIDfolderID}')
+    # Change dir to folder where the tarball is
+    # REST requests to SNAPPY need to be executed
+    # from the folder where the file you need to upload is located
+    os.chdir(args.directory)
 
-    # upload requests.tar.g
-    # metadata definition
-    file_metadata = {
-        "name": "requests.tar.gz",
-        "parents": [UUIDfolderID]
-    }
+    response = requests.post(f'{args.snappy_server}/auth/jwt/login',
+                             data={
+                                'password': args.snappy_password,
+                                'username': args.snappy_user})
+    if response.status_code != 200:
+        logger.error(f'Authentication failed: {response.json()}')
+        sys.exit(1)
 
-    # upload
-    filename = str(os.path.join(args.directory, "requests.tar.gz"))
-    logger.info(f'Uploading file {filename}....')
-    media = MediaFileUpload(filename,
-                            mimetype='application/gzip',
-                            resumable=True)
-    file = service.files().create(body=file_metadata,
-                                  media_body=media, fields='id').execute()
-    logger.info(f'File created, id: {file.get("id")}')
+    access_token = response.json()['access_token']
+    auth_headers = {'Authorization': f'Bearer {access_token}'}
+
+    query = {'filename': tar_name,
+             'filedir': f'ocm/{uuid}'}
+    response = requests.post(f'{args.snappy_server}/api',
+                             params=query,
+                             headers=auth_headers,
+                             data=open(os.path.join(args.directory,
+                                                    tar_name), 'rb'))
+    if response.status_code != 200:
+        logger.error(f'Upload of the file failed: {response.json()}')
+        sys.exit(1)
+
+    # Return to execution folder
+    os.chdir(exec_folder)
+
+    logger.info('File uploaded successfully')
 
 
 def summarized_requests(path, index_name, test_id, test_name):
@@ -563,15 +486,20 @@ def main():
                                                  help="uploads test results",
                                                  parents=[parent_parser])
 
-    upload_parser.add_argument('--pickle',
-                               dest="pickle",
-                               help='file with GDrive pickle authorization. \
-                                (If not provided, please provide credentials)')
+    upload_parser.add_argument('--server',
+                               dest="snappy_server",
+                               help='Snappy server URL',
+                               required=True)
 
-    upload_parser.add_argument('--cred',
-                               dest="credentials",
-                               help='file with GDrive credentials. \
-                                (Ignored if pickle is provided)')
+    upload_parser.add_argument('--user',
+                               dest="snappy_user",
+                               help='User for authenticating to snappy',
+                               required=True)
+
+    upload_parser.add_argument('--password',
+                               dest="snappy_password",
+                               help='Password for authenticating to snappy',
+                               required=True)
 
     es_bulk = action_subparsers.add_parser("esbulk",
                                            help="uploads results to ES",
