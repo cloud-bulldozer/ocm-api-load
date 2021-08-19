@@ -1,4 +1,5 @@
 VERSION := v0.2.0
+NAME := ocm-load-test
 # Enable Go modules:
 export GO111MODULE=on
 export GOPROXY=https://proxy.golang.org
@@ -19,6 +20,33 @@ LD_FLAGS += -X github.com/cloud-bulldozer/ocm-api-load/pkg/cmd.BuildDate=$(DATE)
 all: build
 
 build:
-	go build -ldflags "$(LD_FLAGS)" cmd/ocm-load-test.go
+	go build -o build/$(NAME) -ldflags "$(LD_FLAGS)" cmd/ocm-load-test.go
 
-.PHONY: all build
+dist: export COPYFILE_DISABLE=1 #teach OSX tar to not put ._* files in tar archive
+dist:
+	rm -rf build/* release/*
+	mkdir -p build release/
+	cp automation.py requirements.txt README.md LICENSE build/
+	GOOS=linux GOARCH=amd64 go build -o build/$(NAME) -ldflags="$(LD_FLAGS)" cmd/ocm-load-test.go
+	tar -C build/ -zcvf $(CURDIR)/release/$(NAME)-linux.tgz automation.py requirements.txt LICENSE README.md $(NAME)
+	GOOS=darwin GOARCH=amd64 go build -o build/$(NAME) -ldflags="$(LD_FLAGS)" cmd/ocm-load-test.go
+	tar -C build/ -zcvf $(CURDIR)/release/$(NAME)-macos.tgz automation.py requirements.txt LICENSE README.md $(NAME)
+	rm build/$(NAME)
+	GOOS=windows GOARCH=amd64 go build -o build/$(NAME).exe -ldflags="$(LD_FLAGS)" cmd/ocm-load-test.go
+	tar -C build/ -zcvf $(CURDIR)/release/$(NAME)-windows.tgz automation.py requirements.txt LICENSE README.md $(NAME).exe
+
+release: dist
+ifndef GITHUB_TOKEN
+	$(error GITHUB_TOKEN is undefined)
+endif
+ifndef GITHUB_USER
+	$(error GITHUB_USER is undefined)
+endif
+	git tag $(VERSION)
+	git push origin --tags
+	github-release release -u cloud-bulldozer -r ocm-api-load -t $(VERSION) --name $(VERSION)
+	github-release upload -u cloud-bulldozer -r ocm-api-load -t $(VERSION) --name $(NAME)-linux.tgz --file release/$(NAME)-linux.tgz
+	github-release upload -u cloud-bulldozer -r ocm-api-load -t $(VERSION) --name $(NAME)-macos.tgz --file release/$(NAME)-macos.tgz
+	github-release upload -u cloud-bulldozer -r ocm-api-load -t $(VERSION) --name $(NAME)-windows.tgz --file release/$(NAME)-windows.tgz
+
+.PHONY: all build dist release

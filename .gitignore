@@ -4,6 +4,9 @@
 ocm-load-test
 config.yaml
 results
+# Build/Release
+build
+release
 # GDriveAPI
 credentials.json
 token.pickle

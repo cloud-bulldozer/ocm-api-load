@@ -147,3 +147,15 @@ This should open the browser with an interactive Graph for access review.
 `python3 export_report.py report /tests/2021-05-18`
 
 This will generate all the `vegeta` report files for each result file
+
+## How to release
+
+Steps:
+
+- Add your GitHub token to the env variable `GITHUB_TOKEN`
+
+- Make sure you have [`github-release`](https://github.com/github-release/github-release#how-to-install) installed
+
+- Be sure you are in the latest version of `main` branch and have bumped the version
+
+- Now you are ready to run `make release` this will build the binary and generate the tarfiles that contain all the needed files

@@ -4,7 +4,9 @@ go 1.15
 
 require (
 	github.com/Rican7/retry v0.1.0
+	github.com/github-release/github-release v0.10.0 // indirect
 	github.com/influxdata/tdigest v0.0.1 // indirect
+	github.com/kevinburke/rest v0.0.0-20210506044642-5611499aa33c // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/onsi/ginkgo v1.15.0 // indirect
 	github.com/onsi/gomega v1.10.5 // indirect
@@ -12,7 +14,9 @@ require (
 	github.com/satori/go.uuid v1.2.0
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/viper v1.7.0
+	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80 // indirect
 	github.com/tsenart/vegeta/v12 v12.8.4
+	github.com/voxelbrain/goptions v0.0.0-20180630082107-58cddc247ea2 // indirect
 	github.com/zgalor/weberr v0.6.0
 	golang.org/x/net v0.0.0-20210421230115-4e50805a0758 // indirect
 )

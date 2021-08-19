@@ -22,7 +22,7 @@ jobs:
       - name: build
         run: make build
       - name: test
-        run: ./ocm-load-test version
+        run: ./build/ocm-load-test version
   python-ci:
     runs-on: ubuntu-latest
     name: Python Lint
