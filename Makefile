@@ -22,6 +22,9 @@ all: build
 build:
 	go build -o build/$(NAME) -ldflags "$(LD_FLAGS)" cmd/ocm-load-test.go
 
+build-image: build
+	podman build --tag quay.io/cloud-bulldozer/ocm-api-load:$(VERSION) -f Dockerfile
+
 dist: export COPYFILE_DISABLE=1 #teach OSX tar to not put ._* files in tar archive
 dist:
 	rm -rf build/* release/*
