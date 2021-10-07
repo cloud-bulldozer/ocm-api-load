@@ -1,4 +1,4 @@
-FROM docker://registry.access.redhat.com/ubi8:latest
+FROM registry.access.redhat.com/ubi8:latest
 
 COPY image_resources/centos8-appstream.repo /etc/yum.repos.d/centos8-appstream.repo
 RUN dnf install -y --nodocs python3 python3-pip && dnf clean all
@@ -15,7 +15,7 @@ RUN curl -L -o ocm-load-test-linux.tgz \
 
 RUN chown -R api:api /home/api/workdir
 
-COPY ./build/ocm-load-test /usr/local/bin/
+RUN cp ocm-load-test /usr/local/bin/
 RUN chmod 755 /usr/local/bin/ocm-load-test
 
 COPY config.example.yaml /home/api/workdir/config.yaml
