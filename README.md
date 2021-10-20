@@ -116,7 +116,7 @@ See [example](./config.example.yaml)
 
 ## Reporting
 
-### Rquirements
+### Requirements
 
 #### External
 
@@ -126,27 +126,37 @@ See [example](./config.example.yaml)
 
 #### python requirements
 
-`$ pip3 install -r requirements.txt`
+```bash
+$ python3 -m venv env
+$ . ./env/bin/activate
+$ pip3 install -r requirements.txt
+```
 
 ### Usage
 
 To generate the report run the following command:
 
-`python3 export_report.py /tests/2021-05-18`
+`python3 automation.py --dir /tests/2021-05-18`
 
 The first argument should be the path to the folder where the `results` folder is located.
 
 ### Graph a specific file
 
-`python3 export_report.py graph /tests/2021-05-18/results/access_review.json`
+`python3 automation.py graph --dir /tests/2021-05-18/results/ --filename access_review.json`
 
 This should open the browser with an interactive Graph for access review.
 
 ### Generate `vegeta` reports
 
-`python3 export_report.py report /tests/2021-05-18`
+`python3 automation.py report --dir /tests/2021-05-18`
 
 This will generate all the `vegeta` report files for each result file
+
+When done deactivate virtual environment
+
+```bash
+$ deactivate
+```
 
 ## How to release
 

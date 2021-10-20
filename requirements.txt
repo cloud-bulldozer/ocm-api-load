@@ -1,5 +1,7 @@
 plotly
 pandas
 python-docx
+requests
+kaleido
 sqlalchemy
 elasticsearch
