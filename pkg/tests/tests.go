@@ -2,8 +2,11 @@ package tests
 
 import (
 	"bytes"
+	"encoding/json"
 	"log"
+	"math/rand"
 	"net/http"
+	"time"
 
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/tests/handlers"
@@ -90,6 +93,13 @@ var tests = []types.TestOptions{
 		Method:   http.MethodPost,
 		Handler:  handlers.TestStaticEndpoint,
 	},
+	{
+		TestName: "certificates",
+		Path:     "/api/accounts_mgmt/v1/certificates",
+		Method:   http.MethodPost,
+		Handler:  handlers.TestStaticEndpoint,
+		Body:     certificatesBody(),
+	},
 }
 
 func accessReviewBody() []byte {
@@ -126,4 +136,27 @@ func resourceReviewBody() []byte {
 		log.Printf("marshaling `resource-review` request: %s", err)
 	}
 	return buff.Bytes()
+}
+
+func certificatesBody() []byte {
+	buff := &bytes.Buffer{}
+	payload := struct {
+		Type string `json:"type"`
+		Arch string `json:"arch"`
+	}{
+		"sca",
+		randomCertArch(),
+	}
+	pl, err := json.Marshal(payload)
+	if err != nil {
+		log.Printf("marshaling `certificates body` request %s", err)
+		return buff.Bytes()
+	}
+	return bytes.NewBuffer(pl).Bytes()
+}
+
+func randomCertArch() string {
+	rand.Seed(time.Now().UnixNano()) //seed to randomize on each run
+	arch := []string{"x86", "x86_64", "ppc", "ppc64", "ppc64le", "s390", "s390x", "ia64", "aarch64"}
+	return arch[rand.Intn(len(arch))]
 }
