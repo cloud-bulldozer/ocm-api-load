@@ -13,10 +13,10 @@ import (
 	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
 
-func TestCreateCluster(options *types.TestOptions) error {
+func TestCreateCluster(ctx context.Context, options *types.TestOptions) error {
 
 	testName := options.TestName
-	targeter := generateCreateClusterTargeter(options.ID, options.Method, options.Path, options.Context, options.Logger)
+	targeter := generateCreateClusterTargeter(ctx, options.ID, options.Method, options.Path, options.Logger)
 
 	for res := range options.Attacker.Attack(targeter, options.Rate, options.Duration, testName) {
 		options.Encoder.Encode(res)
@@ -28,7 +28,7 @@ func TestCreateCluster(options *types.TestOptions) error {
 // Generates a targeter for the "POST /api/clusters_mgmt/v1/clusters" endpoint
 // with monotonic increasing indexes.
 // The clusters created are "fake clusters", that is, do not consume any cloud-provider infrastructure.
-func generateCreateClusterTargeter(ID, method, url string, ctx context.Context, log logging.Logger) vegeta.Targeter {
+func generateCreateClusterTargeter(ctx context.Context, ID, method, url string, log logging.Logger) vegeta.Targeter {
 	idx := 0
 
 	// This will take the first 4 characters of the UUID

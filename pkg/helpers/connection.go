@@ -4,13 +4,13 @@ import (
 	"context"
 	"net/http"
 
-	sdk "github.com/openshift-online/ocm-sdk-go"
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/logging"
+	sdk "github.com/openshift-online/ocm-sdk-go"
 )
 
 // BuildConnection build the vegeta connection
 // that is going to be used for testing
-func BuildConnection(gateway, clientID, clientSecret, token string, logger logging.Logger, ctx context.Context) (*sdk.Connection, error) {
+func BuildConnection(ctx context.Context, gateway, clientID, clientSecret, token string, logger logging.Logger) (*sdk.Connection, error) {
 	conn, err := sdk.NewConnectionBuilder().
 		Insecure(true).
 		URL(gateway).
@@ -18,7 +18,7 @@ func BuildConnection(gateway, clientID, clientSecret, token string, logger loggi
 		Tokens(token).
 		Logger(logger).
 		TransportWrapper(func(wrapped http.RoundTripper) http.RoundTripper {
-			return &CleanClustersTransport{Wrapped: wrapped, Logger: logger, Context: ctx}
+			return &CleanClustersTransport{Wrapped: wrapped, Logger: logger}
 		}).
 		BuildContext(ctx)
 	if err != nil {

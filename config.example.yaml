@@ -19,6 +19,10 @@ cooldown: 10
 output-path: "./results"
 rate: "5/s"
 test-id: new-test
+ramp-type: exponential
+start-rate: 1
+end-rate: 120
+ramp-steps: 6
 tests:
   self-access-token:
     rate: "1000/h"
@@ -51,11 +55,17 @@ tests:
     rate: "2000/h"
     duration: 1
   cluster-authorizations:
-    rate: "2000/h"
-    duration: 1
+    duration: 30
+    ramp-type: linear
+    start-rate: 1
+    end-rate: 50
+    ramp-steps: 6
   self-terms-review:
-    rate: "10/s"
-    duration: 1
+    duration: 30
+    ramp-type: exponential
+    start-rate: 1
+    end-rate: 50
+    ramp-steps: 6
   certificates:
     rate: "2/s"
     duration: 1

@@ -4,13 +4,11 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/cmd"
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/logging"
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/tests"
-	"github.com/cloud-bulldozer/ocm-api-load/pkg/types"
 	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/cobra"
 
@@ -43,19 +41,28 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	cobra.OnInitialize(initConfig)
+	//Flags with defaults
 	rootCmd.Flags().StringVar(&configFile, "config-file", "config.yaml", "config file")
 	rootCmd.Flags().String("ocm-token-url", "https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token", "Token URL")
-	rootCmd.Flags().String("ocm-token", "", "OCM Authorization token")
 	rootCmd.Flags().String("gateway-url", "https://api.integration.openshift.com", "Gateway url to perform the test against")
 	rootCmd.Flags().String("test-id", uuid.NewV4().String(), "Unique ID to identify the test run. UUID is recommended")
 	rootCmd.Flags().String("output-path", "results", "Output directory for result and report files")
 	rootCmd.Flags().Int("duration", 1, "Duration of each individual run in minutes.")
 	rootCmd.Flags().String("rate", "1/s", "Rate of the attack. Format example 5/s. (Available units 'ns', 'us', 'ms', 's', 'm', 'h')")
-	rootCmd.Flags().StringSlice("test-names", []string{}, "Names for the tests to be run.")
 	rootCmd.Flags().BoolP("verbose", "v", false, "set this flag to activate verbose logging.")
 	rootCmd.Flags().Int("cooldown", 10, "Cooldown time between tests in seconds.")
+	rootCmd.Flags().StringSlice("test-names", []string{}, "Names for the tests to be run.")
+	//Ramping Flags
+	rootCmd.Flags().String("ramp-type", "", "Type of ramp to use for all tests. (linear, exponential)")
+	rootCmd.Flags().Int("start-rate", 0, "Starting request per second rate. (E.g.: 5 would be 5 req/s)")
+	rootCmd.Flags().Int("end-rate", 0, "Ending request per second rate. (E.g.: 5 would be 5 req/s)")
+	rootCmd.Flags().Int("ramp-steps", 0, "Number of stepts to get from start rate to end rate. (Minimum 2 steps)")
+	rootCmd.Flags().Int("ramp-duration", 0, "Duration of ramp in minutes, before normal execution")
+
+	//Required flags
+	rootCmd.Flags().String("ocm-token", "", "OCM Authorization token")
 	// AWS config
-	// If needed to use multiple AWS account, use the config file
+	// If multiple AWS account are needed use the config file
 	rootCmd.Flags().String("aws-region", "us-west-1", "AWS region")
 	rootCmd.Flags().String("aws-access-key", "", "AWS access key")
 	rootCmd.Flags().String("aws-access-secret", "", "AWS access secret")
@@ -141,44 +148,35 @@ func run(cmd *cobra.Command, args []string) error {
 	if viper.GetString("ocm-token") == "" {
 		logger.Fatal(cmd.Context(), "ocm-token is a necessary configuration")
 	}
-	err = helpers.CreateFolder(viper.GetString("output-path"), logger)
+	err = helpers.CreateFolder(cmd.Context(), viper.GetString("output-path"), logger)
 	if err != nil {
 		logger.Fatal(cmd.Context(), "creating api connection: %v", err)
 	}
 	logger.Info(cmd.Context(), "Using output directory: %s", viper.GetString("output-path"))
 
-	connection, err := helpers.BuildConnection(viper.GetString("gateway-url"),
+	connection, err := helpers.BuildConnection(cmd.Context(), viper.GetString("gateway-url"),
 		viper.GetString("client.id"),
 		viper.GetString("client.secret"),
 		viper.GetString("ocm-token"),
 		logger,
-		cmd.Context())
+	)
 	if err != nil {
 		logger.Fatal(cmd.Context(), "creating api connection: %v", err)
 	}
-	defer helpers.Cleanup(connection)
-
-	vegetaRate, err := helpers.ParseRate(viper.GetString("rate"))
-	if err != nil {
-		logger.Fatal(cmd.Context(), "parsing rate: %v", err)
-	}
+	defer helpers.Cleanup(cmd.Context(), connection)
 
 	configTests()
 
 	configAWS(cmd.Context(), logger)
 
-	testConfig := types.TestConfiguration{
-		TestID:          viper.GetString("test-id"),
-		OutputDirectory: viper.GetString("output-path"),
-		Duration:        time.Duration(viper.GetInt("duration")) * time.Minute,
-		Cooldown:        time.Duration(viper.GetInt("cooldown")) * time.Second,
-		Rate:            vegetaRate,
-		Connection:      connection,
-		Logger:          logger,
-		Ctx:             cmd.Context(),
-	}
+	runner := tests.NewRunner(
+		viper.GetString("test-id"),
+		viper.GetString("output-path"),
+		logger,
+		connection,
+	)
 
-	if err := tests.Run(testConfig); err != nil {
+	if err := runner.Run(cmd.Context()); err != nil {
 		logger.Fatal(cmd.Context(), "running load test: %v", err)
 	}
 

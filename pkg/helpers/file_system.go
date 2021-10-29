@@ -10,8 +10,8 @@ import (
 )
 
 // CreateFolder creates folder in the system
-func CreateFolder(path string, logger logging.Logger) error {
-	logger.Info(context.Background(), "Creating '%s' directory", path)
+func CreateFolder(ctx context.Context, path string, logger logging.Logger) error {
+	logger.Info(ctx, "Creating '%s' directory", path)
 	folder, err := filepath.Abs(path)
 	if err != nil {
 		return err

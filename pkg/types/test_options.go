@@ -24,11 +24,10 @@ type TestOptions struct {
 	Duration time.Duration
 
 	// Test "Infrastructure"
-	ID         string                         // Unique UUID of a given test-suite execution.
-	Handler    func(*TestOptions) (err error) // Function which tests the given endpoint
+	ID         string                                          // Unique UUID of a given test-suite execution.
+	Handler    func(context.Context, *TestOptions) (err error) // Function which tests the given endpoint
 	Attacker   *vegeta.Attacker
 	Connection *sdk.Connection
 	Encoder    *vegeta.Encoder // Encodes results and writes them to a File
 	Logger     logging.Logger
-	Context    context.Context
 }
