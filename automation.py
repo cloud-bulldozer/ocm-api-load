@@ -189,6 +189,127 @@ def show_graphs(directory, filename):
                  validate=False)
 
 
+def cma_graph(directory, filename):
+    regex = re.compile(r'(.*/)?[\w-]+_([\w-]+).(\w.+)')
+    matches = regex.match(filename)
+    if regex.match(filename) and matches.group(3) == 'json':
+        # Initializes database for current file in current directory
+        # Read by 20000 chunks
+        disk_engine = create_engine(
+            'sqlite:///{}.db'.format(matches.group(2)))
+
+        j = 0
+        index_start = 1
+        chunk = 20000
+        for df in pd.read_json(os.path.join(directory, filename),
+                               lines=True,
+                               chunksize=chunk):
+            df.index += index_start
+
+            columns = ['timestamp', 'latency']
+
+            for c in df.columns:
+                if c not in columns:
+                    df = df.drop(c, axis=1)
+
+            j += 1
+            logger.info(f'completed {j*chunk} rows')
+
+            df.to_sql('data', disk_engine, if_exists='append')
+            index_start = df.index[-1] + 1
+
+        df = pd.read_sql_query('SELECT * FROM data', disk_engine)
+        df_t = pd.DataFrame(df.iloc[:, -1])
+        df_t.index = df.timestamp
+
+        df_t['cma'] = df_t.expanding().mean()
+
+        data = [{
+            'type': 'line',
+            'x': df_t.index,
+            'y': df_t['cma']/1000000,
+        }]
+
+        layout = {
+            'title': '<b>Cumulative AVG Latency: {}</b>'.format(
+                matches.group(2)),
+            'xaxis': {'title': 'Time',
+                      'showgrid': 'true',
+                      'ticklabelmode': "period"},
+            'yaxis': {'title': 'Milliseconds (log)', 'type': 'linear'},
+        }
+
+        fig_dict = {'data': data, 'layout': layout}
+
+        os.remove('{}.db'.format(matches.group(2)))
+
+        pio.show(fig_dict,
+                 engine="kaleido",
+                 width=1600,
+                 height=900,
+                 validate=False)
+
+
+def count_graph(directory, filename):
+    regex = re.compile(r'(.*/)?[\w-]+_([\w-]+).(\w.+)')
+    matches = regex.match(filename)
+    if regex.match(filename) and matches.group(3) == 'json':
+        # Initializes database for current file in current directory
+        # Read by 20000 chunks
+        disk_engine = create_engine(
+            'sqlite:///{}.db'.format(matches.group(2)))
+
+        j = 0
+        index_start = 1
+        chunk = 20000
+        for df in pd.read_json(os.path.join(directory, filename),
+                               lines=True,
+                               chunksize=chunk):
+            df.index += index_start
+
+            columns = ['timestamp', 'latency']
+
+            for c in df.columns:
+                if c not in columns:
+                    df = df.drop(c, axis=1)
+
+            j += 1
+            logger.info(f'completed {j*chunk} rows')
+
+            df.to_sql('data', disk_engine, if_exists='append')
+            index_start = df.index[-1] + 1
+
+        df = pd.read_sql_query('SELECT * FROM data', disk_engine)
+        df_t = pd.DataFrame(df.iloc[:, -1])
+        df_t.index = df.timestamp
+
+        df_t['count'] = df_t.expanding().count()
+
+        data = [{
+            'type': 'line',
+            'x': df_t.index,
+            'y': df_t['count'],
+        }]
+
+        layout = {
+            'title': '<b>Request count : {}</b>'.format(matches.group(2)),
+            'xaxis': {'title': 'Time',
+                      'showgrid': 'true',
+                      'ticklabelmode': "period"},
+            'yaxis': {'title': 'Number of requests', 'type': 'linear'},
+        }
+
+        fig_dict = {'data': data, 'layout': layout}
+
+        os.remove('{}.db'.format(matches.group(2)))
+
+        pio.show(fig_dict,
+                 engine="kaleido",
+                 width=1600,
+                 height=900,
+                 validate=False)
+
+
 def generate_summaries(directory):
     try:
         os.stat('{}/summaries'.format(directory))
@@ -466,6 +587,26 @@ def main():
                               help='filename of a result to display the graph. \
                                 (Overrides generating all graphs.)')
 
+    cma_parser = action_subparsers.add_parser("cma",
+                                              help="generate cummulative average graph \
+                                               for the results file",
+                                              parents=[parent_parser])
+
+    cma_parser.add_argument('--filename',
+                            dest="filename",
+                            help='filename of a result to display the graph',
+                            required=True)
+
+    count_parser = action_subparsers.add_parser("count",
+                                                help="generate cummulative count of requests graph \
+                                                for the results file",
+                                                parents=[parent_parser])
+
+    count_parser.add_argument('--filename',
+                              dest="filename",
+                              help='filename of a result to display the graph',
+                              required=True)
+
     action_subparsers.add_parser("summary",
                                  help="generates vegeta \
                                   summary for results",
@@ -478,8 +619,7 @@ def main():
     report_parser.add_argument('--filename',
                                dest='filename',
                                default='report-{}.docx'.format(
-                                                date.strftime("%Y-%m-%d")
-                                                ),
+                                    date.strftime("%Y-%m-%d")),
                                help='name for the report file.')
 
     upload_parser = action_subparsers.add_parser("upload",
@@ -516,6 +656,10 @@ def main():
             show_graphs(args.directory, args.filename)
         else:
             generate_graphs(args.directory)
+    elif args.action_command == 'cma':
+        cma_graph(args.directory, args.filename)
+    elif args.action_command == 'count':
+        count_graph(args.directory, args.filename)
     elif args.action_command == 'summary':
         generate_summaries(args.directory)
     elif args.action_command == 'report':

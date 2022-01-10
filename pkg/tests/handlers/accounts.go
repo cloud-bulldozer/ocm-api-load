@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
@@ -17,12 +18,12 @@ import (
 // TestRegisterNewCluster performs a load test on the endpoint responsible for
 // handling Registering New Clusters. This endpoint is typically used by Hive
 // and not directly accessed by most clients.
-func TestRegisterNewCluster(options *types.TestOptions) error {
+func TestRegisterNewCluster(ctx context.Context, options *types.TestOptions) error {
 
 	testName := options.TestName
 	// Fetch the authorization token and create a dynamic Target generator for
 	// building valid HTTP Requests
-	targeter := generateClusterRegistrationTargeter(options)
+	targeter := generateClusterRegistrationTargeter(ctx, options)
 
 	for res := range options.Attacker.Attack(targeter, options.Rate, options.Duration, testName) {
 		options.Encoder.Encode(res)
@@ -31,11 +32,11 @@ func TestRegisterNewCluster(options *types.TestOptions) error {
 	return nil
 }
 
-func TestRegisterExistingCluster(options *types.TestOptions) error {
+func TestRegisterExistingCluster(ctx context.Context, options *types.TestOptions) error {
 
 	testName := options.TestName
 	quantity := options.Rate.Freq
-	targeter := generateClusterReRegistrationTargeter(quantity, options)
+	targeter := generateClusterReRegistrationTargeter(ctx, quantity, options)
 
 	for res := range options.Attacker.Attack(targeter, options.Rate, options.Duration, testName) {
 		options.Encoder.Encode(res)
@@ -46,24 +47,24 @@ func TestRegisterExistingCluster(options *types.TestOptions) error {
 
 // getAuthorizationToken will fetch and return the current user's Authorization
 //Token which is required by certain endpoints such as Cluster Registration.
-func getAuthorizationToken(options *types.TestOptions) string {
+func getAuthorizationToken(ctx context.Context, options *types.TestOptions) string {
 	result, err := options.Connection.AccountsMgmt().V1().AccessToken().Post().Send()
 	if err != nil {
-		options.Logger.Error(options.Context, "Unable to retrieve authorization token: %s", err)
+		options.Logger.Error(ctx, "Unable to retrieve authorization token: %s", err)
 	}
 	body := result.Body().Auths()
 	token := body["cloud.openshift.com"].Auth()
 	if len(token) == 0 {
-		options.Logger.Warn(options.Context, "Authorization token appears to be empty. Other requests may not succeed.")
+		options.Logger.Warn(ctx, "Authorization token appears to be empty. Other requests may not succeed.")
 	} else {
-		options.Logger.Info(options.Context, "Successfully fetched Authorization Token")
+		options.Logger.Info(ctx, "Successfully fetched Authorization Token")
 	}
 	return token
 }
 
 // generateClusterReRegistrationTargeter registers fake clusters and then
 // returns a targeter which uses those fake clusters.
-func generateClusterReRegistrationTargeter(qty int, options *types.TestOptions) vegeta.Targeter {
+func generateClusterReRegistrationTargeter(ctx context.Context, qty int, options *types.TestOptions) vegeta.Targeter {
 
 	clusterIds := make([]string, qty)
 	var currentTarget = 0
@@ -71,32 +72,32 @@ func generateClusterReRegistrationTargeter(qty int, options *types.TestOptions) 
 	// Cache the Authorization Token to avoid retrieving it with every request
 	var authorizationToken = ""
 	if len(authorizationToken) == 0 {
-		authorizationToken = getAuthorizationToken(options)
+		authorizationToken = getAuthorizationToken(ctx, options)
 	}
 
 	// Register multiple mock clusters and store their IDs
-	options.Logger.Info(options.Context, "Registering %d clusters to use for re-registration test", qty)
+	options.Logger.Info(ctx, "Registering %d clusters to use for re-registration test", qty)
 	for i := range clusterIds {
 
 		clusterID := uuid.NewV4().String()
 
 		body, err := v1.NewClusterRegistrationRequest().AuthorizationToken(authorizationToken).ClusterID(clusterID).Build()
 		if err != nil {
-			options.Logger.Fatal(options.Context, "Unable to build cluster registration request: %v", err)
+			options.Logger.Fatal(ctx, "Unable to build cluster registration request: %v", err)
 		}
 
 		var rawBody bytes.Buffer
 		err = v1.MarshalClusterRegistrationRequest(body, &rawBody)
 		if err != nil {
-			options.Logger.Fatal(options.Context, "Unable to serialize cluster registration request body: ", err)
+			options.Logger.Fatal(ctx, "Unable to serialize cluster registration request body: ", err)
 		}
 
 		resp, err := options.Connection.AccountsMgmt().V1().ClusterRegistrations().Post().Request(body).Send()
 		if err != nil {
-			options.Logger.Fatal(options.Context, "Unable to register cluster: ", err)
+			options.Logger.Fatal(ctx, "Unable to register cluster: ", err)
 		}
 
-		options.Logger.Info(options.Context, "[%d/%d] Registered Cluster: '%s'. Response: %d\n", i, len(clusterIds), clusterID, resp.Status())
+		options.Logger.Info(ctx, "[%d/%d] Registered Cluster: '%s'. Response: %d\n", i, len(clusterIds), clusterID, resp.Status())
 		clusterIds[i] = clusterID
 
 		// Avoid hitting rate limiting
@@ -139,12 +140,12 @@ func generateClusterReRegistrationTargeter(qty int, options *types.TestOptions) 
 // generateClusterRegistrationTargeter returns a targeter which will create a
 // unique Cluster Registration request body each time using a valid auth token
 // and a UUID for the Cluster's ID to ensure uniqueness.
-func generateClusterRegistrationTargeter(options *types.TestOptions) vegeta.Targeter {
+func generateClusterRegistrationTargeter(ctx context.Context, options *types.TestOptions) vegeta.Targeter {
 
 	// Cache the Authorization Token to avoid retrieving it with every request
 	var authorizationToken = ""
 	if len(authorizationToken) == 0 {
-		authorizationToken = getAuthorizationToken(options)
+		authorizationToken = getAuthorizationToken(ctx, options)
 	}
 
 	targeter := func(t *vegeta.Target) error {
@@ -173,7 +174,7 @@ func generateClusterRegistrationTargeter(options *types.TestOptions) vegeta.Targ
 }
 
 // Test quota cost
-func TestQuotaCost(options *types.TestOptions) error {
+func TestQuotaCost(ctx context.Context, options *types.TestOptions) error {
 
 	conn := options.Connection
 
@@ -192,15 +193,15 @@ func TestQuotaCost(options *types.TestOptions) error {
 		return fmt.Errorf("no organizations where found for this account")
 	}
 
-	options.Logger.Info(options.Context, "Using Organization id: %s.", orgID)
+	options.Logger.Info(ctx, "Using Organization id: %s.", orgID)
 	options.Path = strings.Replace(options.Path, "{orgId}", orgID, 1)
 
-	return TestStaticEndpoint(options)
+	return TestStaticEndpoint(ctx, options)
 
 }
 
 // Test Cluster Authorizations
-func TestClusterAuthorizations(options *types.TestOptions) error {
+func TestClusterAuthorizations(ctx context.Context, options *types.TestOptions) error {
 
 	targeter := func(t *vegeta.Target) error {
 
@@ -208,7 +209,7 @@ func TestClusterAuthorizations(options *types.TestOptions) error {
 		clusterId := uuid.NewV4().String()
 		t.Method = http.MethodPost
 		t.URL = options.Path
-		t.Body = clusterAuthorizationsBody(clusterId, options)
+		t.Body = clusterAuthorizationsBody(ctx, clusterId, options)
 
 		return nil
 	}
@@ -221,7 +222,7 @@ func TestClusterAuthorizations(options *types.TestOptions) error {
 	return nil
 }
 
-func clusterAuthorizationsBody(clusterID string, options *types.TestOptions) []byte {
+func clusterAuthorizationsBody(ctx context.Context, clusterID string, options *types.TestOptions) []byte {
 	buff := &bytes.Buffer{}
 	reservedResource := v1.NewReservedResource().
 		ResourceName(helpers.M5XLargeResource).
@@ -241,13 +242,13 @@ func clusterAuthorizationsBody(clusterID string, options *types.TestOptions) []b
 		Resources(reservedResource).
 		Build()
 	if err != nil {
-		options.Logger.Info(options.Context, "building `cluster-authorizations` request: %s", err)
+		options.Logger.Info(ctx, "building `cluster-authorizations` request: %s", err)
 		return buff.Bytes()
 	}
 	err = v1.MarshalClusterAuthorizationRequest(clusterAuthReq, buff)
 	if err != nil {
 
-		options.Logger.Error(options.Context, "marshaling `cluster-authorizations` request: %s", err)
+		options.Logger.Error(ctx, "marshaling `cluster-authorizations` request: %s", err)
 	}
 	return buff.Bytes()
 }
