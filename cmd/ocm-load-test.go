@@ -52,6 +52,11 @@ func init() {
 	rootCmd.Flags().BoolP("verbose", "v", false, "set this flag to activate verbose logging.")
 	rootCmd.Flags().Int("cooldown", 10, "Cooldown time between tests in seconds.")
 	rootCmd.Flags().StringSlice("test-names", []string{}, "Names for the tests to be run.")
+	//Elasticsearch Flags
+	rootCmd.Flags().String("elastic-server", "", "Elasticsearch cluster URL")
+	rootCmd.Flags().String("elastic-user", "", "Elasticsearch User for authentication")
+	rootCmd.Flags().String("elastic-password", "", "Elasticsearch Password for authentication")
+	rootCmd.Flags().String("elastic-index", "", "Elasticsearch index to store the documetns")
 	//Ramping Flags
 	rootCmd.Flags().String("ramp-type", "", "Type of ramp to use for all tests. (linear, exponential)")
 	rootCmd.Flags().Int("start-rate", 0, "Starting request per second rate. (E.g.: 5 would be 5 req/s)")
@@ -109,12 +114,12 @@ func configTests() {
 }
 
 // configAWS decides wether to use Flags values or config file
-func configAWS(ctx context.Context, logger *logging.GoLogger) {
+func configAWS() error {
 	// Flag overrides config
-	// Selecting test passed in the Flag
+	// Selecting aws config passed by flags
 	if viper.GetString("aws-account-id") != "" {
 		if viper.GetString("aws-access-key") == "" || viper.GetString("aws-access-secret") == "" {
-			logger.Fatal(ctx, "AWS configuration not complete")
+			return fmt.Errorf("AWS configuration not complete")
 		}
 		config := []interface{}{map[interface{}]interface{}{
 			"region":            viper.GetString("aws-region"),
@@ -125,15 +130,36 @@ func configAWS(ctx context.Context, logger *logging.GoLogger) {
 		viper.Set("aws", config)
 	}
 
-	// If no Flag or Config is passed all test should run
-	if len(viper.Get("aws").([]interface{})) < 1 {
-		logger.Fatal(ctx, "AWS configuration not provided")
+	// If no Flag or Config is passed test should fail
+	if !viper.IsSet("aws") || len(viper.Get("aws").([]interface{})) < 1 {
+		return fmt.Errorf("AWS configuration not provided")
 	}
 
 	// If multiple accounts are passed.
 	if len(viper.Get("aws").([]interface{})) > 1 {
-		logger.Fatal(ctx, "Multiple AWS accounts are not supported at the moment")
+		return fmt.Errorf("multiple AWS accounts are not supported at the moment")
 	}
+	return nil
+}
+
+// configES decides wether to use Flags values or config file
+func configES() error {
+	// Flag overrides config
+	// Selecting ES config passed by flags
+	// If no Flag or Config is passed the test will not index the documents.
+	if viper.GetString("elastic-server") != "" {
+		if viper.GetString("elastic-index") == "" {
+			return fmt.Errorf("ES configuration needs an index set `elastic-index` flag")
+		}
+		config := map[string]interface{}{
+			"server":   viper.GetString("elastic-server"),
+			"user":     viper.GetString("elastic-user"),
+			"password": viper.GetString("elastic-password"),
+			"index":    viper.GetString("elastic-index"),
+		}
+		viper.Set("elastic", config)
+	}
+	return nil
 }
 
 func run(cmd *cobra.Command, args []string) error {
@@ -167,7 +193,15 @@ func run(cmd *cobra.Command, args []string) error {
 
 	configTests()
 
-	configAWS(cmd.Context(), logger)
+	err = configAWS()
+	if err != nil {
+		logger.Fatal(cmd.Context(), "Configuring AWS: %s", err)
+	}
+
+	err = configES()
+	if err != nil {
+		logger.Fatal(cmd.Context(), "Configuring ES: %s", err)
+	}
 
 	runner := tests.NewRunner(
 		viper.GetString("test-id"),

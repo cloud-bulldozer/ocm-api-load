@@ -14,6 +14,11 @@ aws:
     access-key: "ASD7ASFET65FFGHDFFS"
     secret-access-key: "fjhgsadf6#$!@%&/dfghdfgdsdf"
     account-id: "123434565665"
+elastic:
+  server: "http://elastic.apps.perfscale.devcluster.openshift.com/"
+  user: "user"
+  password: "password"
+  index: "es-index"
 duration: 2
 cooldown: 10
 output-path: "./results"

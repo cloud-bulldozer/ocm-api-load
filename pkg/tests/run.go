@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/config"
+	"github.com/cloud-bulldozer/ocm-api-load/pkg/elastic"
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/logging"
 	ramp "github.com/cloud-bulldozer/ocm-api-load/pkg/ramping"
@@ -153,6 +154,14 @@ func (r *Runner) Run(ctx context.Context) error {
 		err = resultsFile.Close()
 		if err != nil {
 			return err
+		}
+
+		// Index result file
+		if viper.GetString("elastic.server") != "" {
+			err := elastic.IndexFile(r.testID, resultsFile.Name(), r.logger, ctx)
+			if err != nil {
+				r.logger.Error(ctx, "Error during ES indexing: %s", err)
+			}
 		}
 
 		if i < len(tests_conf.AllSettings()) {
