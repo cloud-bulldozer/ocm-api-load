@@ -158,7 +158,11 @@ func (r *Runner) Run(ctx context.Context) error {
 
 		// Index result file
 		if viper.GetString("elastic.server") != "" {
-			err := elastic.IndexFile(r.testID, resultsFile.Name(), r.logger, ctx)
+			indexer, err := elastic.NewESIndexer(ctx, r.logger)
+			if err != nil {
+				r.logger.Error(ctx, "obtaining indexer: %s", err)
+			}
+			err = indexer.IndexFile(ctx, r.testID, resultsFile.Name(), r.logger)
 			if err != nil {
 				r.logger.Error(ctx, "Error during ES indexing: %s", err)
 			}

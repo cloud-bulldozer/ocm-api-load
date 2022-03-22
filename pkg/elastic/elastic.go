@@ -14,7 +14,22 @@ import (
 	"github.com/spf13/viper"
 )
 
-func newClient(logger logging.Logger, ctx context.Context) (*opensearch.Client, error) {
+type ESIndexer struct {
+	BulkIndexer opensearchutil.BulkIndexer
+}
+
+func NewESIndexer(ctx context.Context, logger logging.Logger) (*ESIndexer, error) {
+	bulkIndexer, err := newBulkIndexer(ctx, logger)
+	if err != nil {
+		return nil, err
+	}
+	return &ESIndexer{
+		BulkIndexer: bulkIndexer,
+	}, nil
+
+}
+
+func newClient(ctx context.Context, logger logging.Logger) (*opensearch.Client, error) {
 	logger.Info(ctx, "Building ES configuration")
 	logger.Debug(ctx, "Using server: %s", viper.GetString("elastic.server"))
 	cfg := opensearch.Config{
@@ -28,29 +43,28 @@ func newClient(logger logging.Logger, ctx context.Context) (*opensearch.Client, 
 
 }
 
-func IndexFile(testID string, fileName string, logger logging.Logger, ctx context.Context) error {
-	cli, err := newClient(logger, ctx)
+func newBulkIndexer(ctx context.Context, logger logging.Logger) (opensearchutil.BulkIndexer, error) {
+	cli, err := newClient(ctx, logger)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	var errors string
 	bulkConfig := opensearchutil.BulkIndexerConfig{
 		Index:  viper.GetString("elastic.index"),
 		Client: cli,
 		OnError: func(ctx context.Context, err error) {
-			errors = fmt.Sprintf("%s\n%s", errors, err)
-		},
-		OnFlushEnd: func(ctx context.Context) {
-			fmt.Printf("%v", ctx)
+			logger.Error(ctx, "%s", err)
 		},
 		ErrorTrace: true,
 	}
 	bulkIndexer, err := opensearchutil.NewBulkIndexer(bulkConfig)
 	if err != nil {
-		return err
+		return nil, err
 	}
+	return bulkIndexer, nil
+}
 
+func (in *ESIndexer) IndexFile(ctx context.Context, testID string, fileName string, logger logging.Logger) error {
 	file, err := os.Open(fileName)
 	if err != nil {
 		return err
@@ -59,9 +73,14 @@ func IndexFile(testID string, fileName string, logger logging.Logger, ctx contex
 	fileScanner := bufio.NewScanner(file)
 	fileScanner.Split(bufio.ScanLines)
 
+	var errors string
 	for fileScanner.Scan() {
 		_doc := doc{}
-		json.Unmarshal(fileScanner.Bytes(), &_doc)
+		err := json.Unmarshal(fileScanner.Bytes(), &_doc)
+		if err != nil {
+			errors = fmt.Sprintf("%s\n%s", errors, err)
+			continue
+		}
 		if _doc.Error != "" {
 			_doc.HasError = true
 		}
@@ -69,19 +88,26 @@ func IndexFile(testID string, fileName string, logger logging.Logger, ctx contex
 			_doc.HasBody = true
 		}
 		_doc.Uuid = testID
-		m, _ := json.Marshal(_doc)
-		bulkIndexer.Add(ctx, opensearchutil.BulkIndexerItem{
+		m, err := json.Marshal(_doc)
+		if err != nil {
+			errors = fmt.Sprintf("%s\n%s", errors, err)
+			continue
+		}
+		err = in.BulkIndexer.Add(ctx, opensearchutil.BulkIndexerItem{
 			Body:   bytes.NewReader(m),
 			Action: "index",
 		})
+		if err != nil {
+			errors = fmt.Sprintf("%s\n%s", errors, err)
+		}
 	}
 
-	bulkIndexer.Close(ctx)
+	in.BulkIndexer.Close(ctx)
 	logger.Info(ctx,
 		"BulkIndexer Stats:\nNumAdded: %d\t\tNumCreate: %d\t\tNumFailed: %d",
-		bulkIndexer.Stats().NumAdded,
-		bulkIndexer.Stats().NumCreated,
-		bulkIndexer.Stats().NumFailed)
+		in.BulkIndexer.Stats().NumAdded,
+		in.BulkIndexer.Stats().NumCreated,
+		in.BulkIndexer.Stats().NumFailed)
 
 	if errors != "" {
 		return fmt.Errorf("BulkIndexer Error: %s", errors)
