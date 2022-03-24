@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/logging"
@@ -70,13 +71,37 @@ func (in *ESIndexer) IndexFile(ctx context.Context, testID string, fileName stri
 		return err
 	}
 	defer file.Close()
-	fileScanner := bufio.NewScanner(file)
-	fileScanner.Split(bufio.ScanLines)
+
+	fileReader := bufio.NewReader(file)
 
 	var errors string
-	for fileScanner.Scan() {
+	for {
+		line, pref, err := fileReader.ReadLine()
+		if err == io.EOF {
+			break
+		}
+
+		fullLine := bytes.Join([][]byte{line}, []byte(""))
+		if pref {
+			for {
+				l, p, err := fileReader.ReadLine()
+				if err == io.EOF {
+					break
+				}
+				if err != nil {
+					errors = fmt.Sprintf("%s\n%s", errors, err)
+					break
+				}
+				fullLine = bytes.Join([][]byte{fullLine, l}, []byte(""))
+
+				if !p {
+					break
+				}
+			}
+		}
+
 		_doc := doc{}
-		err := json.Unmarshal(fileScanner.Bytes(), &_doc)
+		err = json.Unmarshal(fullLine, &_doc)
 		if err != nil {
 			errors = fmt.Sprintf("%s\n%s", errors, err)
 			continue
