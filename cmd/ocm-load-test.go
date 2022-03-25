@@ -56,7 +56,7 @@ func init() {
 	rootCmd.Flags().String("elastic-server", "", "Elasticsearch cluster URL")
 	rootCmd.Flags().String("elastic-user", "", "Elasticsearch User for authentication")
 	rootCmd.Flags().String("elastic-password", "", "Elasticsearch Password for authentication")
-	rootCmd.Flags().String("elastic-index", "", "Elasticsearch index to store the documetns")
+	rootCmd.Flags().String("elastic-index", "", "Elasticsearch index to store the documents")
 	//Ramping Flags
 	rootCmd.Flags().String("ramp-type", "", "Type of ramp to use for all tests. (linear, exponential)")
 	rootCmd.Flags().Int("start-rate", 0, "Starting request per second rate. (E.g.: 5 would be 5 req/s)")
