@@ -46,6 +46,10 @@ path as your binary, it will be autodetected and you could run by just calling i
       --config-file string         config file (default "config.yaml")
       --cooldown int               Cooldown time between tests in seconds. (default 10)
       --duration int               Duration of each individual run in minutes. (default 1)
+      --elastic-index string       Elasticsearch index to store the documents
+      --elastic-password string    Elasticsearch Password for authentication
+      --elastic-server string      Elasticsearch cluster URL
+      --elastic-user string        Elasticsearch User for authentication
       --end-rate int               Ending request per second rate. (E.g.: 5 would be 5 req/s)
       --gateway-url string         Gateway url to perform the test against (default "https://api.integration.openshift.com")
   -h, --help                       help for ocm-api-load
@@ -91,6 +95,11 @@ path as your binary, it will be autodetected and you could run by just calling i
 - client:
   - id: OpenID client identifier.
   - secret: OpenID client secret.
+- aws:
+  - region: AWS region (default "us-west-1")
+  - access-key: AWS access key
+  - secret-access-key: AWS access secret
+  - account-id: AWS Account ID, is the 12-digit account number
 - output-path: Path to output results.
 - duration: Duration of each individual run in minutes. (default 1)
 - cooldown: Cooldown time between tests in seconds. (default 10 s)
@@ -102,6 +111,11 @@ path as your binary, it will be autodetected and you could run by just calling i
 - end-rate: Ending request per second rate. (E.g.: 5 would be 5 req/s)
 - ramp-steps: Number of stepts to get from start rate to end rate. (Minimum 2 steps)
 - tests: List of the tests to run. Empty list means all.
+- elastic:
+  - server: Elasticsearch cluster URL
+  - user: Elasticsearch User for authentication
+  - password: Elasticsearch Password for authentication
+  - index: Elasticsearch index to store the documents
 
 ### Test options
 
