@@ -15,10 +15,9 @@ func TestConfigHelper_ResolveStringConfig(t *testing.T) {
 		key  string
 		want string
 	}{
-		{"1", "NoName", "testName", "NoName"},
-		{"2", "NoName", "test_name", "MyTest"},
-		{"3", "5/s", "rate", "5/s"},
-		{"4", "5/s", "MyTest.rate", "2/s"},
+		{"no_key_use_def", "NoName", "testName", "NoName"},
+		{"key_exists", "NoName", "test_name", "MyTest"},
+		{"nested_key_exists", "5/s", "MyTest.rate", "2/s"},
 	}
 	conf := viper.New()
 	conf.Set("test_name", "MyTest")
@@ -43,10 +42,9 @@ func TestConfigHelper_ResolveIntConfig(t *testing.T) {
 		key  string
 		want int
 	}{
-		{"1", 15, "testDuration", 15},
-		{"2", 15, "test_duration", 33},
-		{"3", 4, "duration", 4},
-		{"4", 4, "MyTest.duration", 99},
+		{"no_key_use_def", 15, "testDuration", 15},
+		{"key_exists", 15, "test_duration", 33},
+		{"nested_key_exists", 4, "MyTest.duration", 99},
 	}
 	conf := viper.New()
 	conf.Set("test_duration", 33)
@@ -72,13 +70,11 @@ func TestConfigHelper_ValidateRampConfig(t *testing.T) {
 		steps int
 		want  bool
 	}{
-		{"1", 1, 5, 2, true},
-		{"2", 1, 5, 1, false},
-		{"3", 1, 5, 0, false},
-		{"4", 0, 5, 2, false},
-		{"4", 1, 0, 2, false},
-		{"4", 5, 5, 2, false},
-		{"4", 5, 2, 2, false},
+		{"correct_config", 1, 5, 2, true},
+		{"steps_less_than_two", 1, 5, 1, false},
+		{"min_lower_than_one", 0, 5, 2, false},
+		{"max_equals_min", 5, 5, 2, false},
+		{"max_lower_than_min", 5, 2, 2, false},
 	}
 	conf := viper.New()
 	conf.Set("test_duration", 33)
@@ -92,7 +88,7 @@ func TestConfigHelper_ValidateRampConfig(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := c.ValidateRampConfig(context.TODO(), tt.max, tt.min, tt.steps); got != tt.want {
+			if got := c.ValidateRampConfig(context.TODO(), tt.min, tt.max, tt.steps); got != tt.want {
 				t.Errorf("ConfigHelper.ValidateRampConfig() = %v, want %v", got, tt.want)
 			}
 		})
