@@ -37,7 +37,7 @@ func (c *ConfigHelper) ResolveIntConfig(ctx context.Context, def int, key string
 	return i
 }
 
-func (c *ConfigHelper) ValidateRampConfig(ctx context.Context, max, min, steps int) bool {
+func (c *ConfigHelper) ValidateRampConfig(ctx context.Context, min, max, steps int) bool {
 	if steps < 2 {
 		c.logger.Warn(ctx,
 			"steps must be always 2 or more. Ignoring ramping configuration.")
@@ -48,14 +48,9 @@ func (c *ConfigHelper) ValidateRampConfig(ctx context.Context, max, min, steps i
 			"min rate must be always 1 or more. Ignoring ramping configuration.")
 		return false
 	}
-	if max < 1 {
-		c.logger.Warn(ctx,
-			"max rate must be always 1 or more. Ignoring ramping configuration.")
-		return false
-	}
 	if max <= min {
 		c.logger.Warn(ctx,
-			"max rate must be bigger than min rate. Ignoring ramping configuration.")
+			"max rate must be higher than min rate. Ignoring ramping configuration.")
 		return false
 	}
 	return true
