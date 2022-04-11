@@ -191,7 +191,6 @@ func run(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		logger.Fatal(cmd.Context(), "creating api connection: %v", err)
 	}
-	defer helpers.Cleanup(cmd.Context(), connection)
 
 	configTests()
 

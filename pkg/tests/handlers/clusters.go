@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/logging"
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/types"
 	"github.com/spf13/viper"
@@ -22,6 +23,7 @@ func TestCreateCluster(ctx context.Context, options *types.TestOptions) error {
 		options.Encoder.Encode(res)
 	}
 
+	helpers.Cleanup(ctx, options.Connection)
 	return nil
 }
 
