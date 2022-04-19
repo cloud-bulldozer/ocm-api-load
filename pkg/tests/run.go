@@ -162,6 +162,12 @@ func (r *Runner) Run(ctx context.Context) error {
 			if err != nil {
 				r.logger.Error(ctx, "obtaining indexer: %s", err)
 			}
+	                serverVersion := helpers.GetServerVersion(ctx, r.connection)
+	                r.logger.Info(ctx, "server version %s", serverVersion)
+			err = indexer.IndexServerVersion(ctx, r.testID, serverVersion, t.TestName, r.logger)
+			if err != nil {
+				r.logger.Error(ctx, "Error during ES indexing: %s", err)
+			}
 			err = indexer.IndexFile(ctx, r.testID, resultsFile.Name(), r.logger)
 			if err != nil {
 				r.logger.Error(ctx, "Error during ES indexing: %s", err)

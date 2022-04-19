@@ -119,3 +119,19 @@ func verifyClusterDeleted(ctx context.Context, clusterID string, connection *sdk
 	connection.Logger().Info(ctx, "Cluster '%s' deleted successfully", clusterID)
 	return nil
 }
+
+func GetServerVersion(ctx context.Context, connection *sdk.Connection) string {
+	// https://github.com/openshift-online/ocm-sdk-go/blob/main/examples/get_metadata.go
+	// Get the client for the resource that manages the metadata:
+	client := connection.ClustersMgmt().V1()
+
+	// Send the request to retrieve the metadata:
+	response, err := client.Get().SendContext(ctx)
+	if err != nil {
+		connection.Logger().Error(ctx, "Failed to get server version, got error: %v", err)
+		return ""
+	}
+	metadata := response.Body()
+
+	return metadata.ServerVersion()
+}
