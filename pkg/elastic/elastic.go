@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/logging"
 	opensearch "github.com/opensearch-project/opensearch-go"
@@ -63,6 +64,18 @@ func newBulkIndexer(ctx context.Context, logger logging.Logger) (opensearchutil.
 		return nil, err
 	}
 	return bulkIndexer, nil
+}
+
+func (in *ESIndexer) IndexServerVersion(ctx context.Context, testID string, version string, testName string, logger logging.Logger) error {
+
+	err := in.BulkIndexer.Add(ctx, opensearchutil.BulkIndexerItem{
+		Body:   strings.NewReader(fmt.Sprintf(`{"version":"%s", "uuid":"%s", "attack":"%s"}`, version, testID, testName)),
+		Action: "index",
+	})
+	if err != nil {
+		return fmt.Errorf("BulkIndexer Error: %s", err)
+	}
+	return nil
 }
 
 func (in *ESIndexer) IndexFile(ctx context.Context, testID string, fileName string, logger logging.Logger) error {
