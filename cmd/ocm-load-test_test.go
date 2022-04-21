@@ -92,6 +92,7 @@ func Test_configES(t *testing.T) {
 		initConfigTests()
 		viper.Set("elastic-server", "http://localhost:9200")
 		viper.Set("elastic-user", "user")
+		viper.Set("elastic-insecure-skip-verify", false)
 		viper.Set("elastic-password", "password")
 		viper.Set("elastic-index", "es-index")
 		if err := configES(); (err != nil) != false {

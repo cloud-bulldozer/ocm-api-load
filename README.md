@@ -50,6 +50,7 @@ path as your binary, it will be autodetected and you could run by just calling i
       --elastic-password string    Elasticsearch Password for authentication
       --elastic-server string      Elasticsearch cluster URL
       --elastic-user string        Elasticsearch User for authentication
+      --elastic-insecure-skip-verify bool        Elasticsearch skip tls verifcation during authentication
       --end-rate int               Ending request per second rate. (E.g.: 5 would be 5 req/s)
       --gateway-url string         Gateway url to perform the test against (default "https://api.integration.openshift.com")
   -h, --help                       help for ocm-api-load

@@ -55,6 +55,7 @@ func init() {
 	//Elasticsearch Flags
 	rootCmd.Flags().String("elastic-server", "", "Elasticsearch cluster URL")
 	rootCmd.Flags().String("elastic-user", "", "Elasticsearch User for authentication")
+	rootCmd.Flags().Bool("elastic-insecure-skip-verify", false, "Elasticsearch skip tls verifcation during authentication")
 	rootCmd.Flags().String("elastic-password", "", "Elasticsearch Password for authentication")
 	rootCmd.Flags().String("elastic-index", "", "Elasticsearch index to store the documents")
 	//Ramping Flags
@@ -154,6 +155,7 @@ func configES() error {
 		config := map[string]interface{}{
 			"server":   viper.GetString("elastic-server"),
 			"user":     viper.GetString("elastic-user"),
+			"insecure-skip-verify":     viper.GetBool("elastic-insecure-skip-verify"),
 			"password": viper.GetString("elastic-password"),
 			"index":    viper.GetString("elastic-index"),
 		}
