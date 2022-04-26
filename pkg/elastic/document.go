@@ -16,4 +16,5 @@ type doc struct {
 	URL       string    `json:"url"`
 	HasError  bool      `json:"has_error"`
 	HasBody   bool      `json:"has_body"`
+	Version   string    `json:"version"`
 }

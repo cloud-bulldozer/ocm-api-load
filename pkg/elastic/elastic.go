@@ -8,8 +8,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-        "strings"
-        "crypto/tls"
+	"crypto/tls"
 	"net/http"
 
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/logging"
@@ -71,19 +70,7 @@ func newBulkIndexer(ctx context.Context, logger logging.Logger) (opensearchutil.
 	return bulkIndexer, nil
 }
 
-func (in *ESIndexer) IndexServerVersion(ctx context.Context, testID string, version string, testName string, logger logging.Logger) error {
-
-	err := in.BulkIndexer.Add(ctx, opensearchutil.BulkIndexerItem{
-		Body:   strings.NewReader(fmt.Sprintf(`{"version":"%s", "uuid":"%s", "attack":"%s"}`, version, testID, testName)),
-		Action: "index",
-	})
-	if err != nil {
-		return fmt.Errorf("BulkIndexer Error: %s", err)
-	}
-	return nil
-}
-
-func (in *ESIndexer) IndexFile(ctx context.Context, testID string, fileName string, logger logging.Logger) error {
+func (in *ESIndexer) IndexFile(ctx context.Context, testID string, version string, fileName string, logger logging.Logger) error {
 	file, err := os.Open(fileName)
 	if err != nil {
 		return err
@@ -131,6 +118,7 @@ func (in *ESIndexer) IndexFile(ctx context.Context, testID string, fileName stri
 			_doc.HasBody = true
 		}
 		_doc.Uuid = testID
+		_doc.Version = version
 		m, err := json.Marshal(_doc)
 		if err != nil {
 			errors = fmt.Sprintf("%s\n%s", errors, err)
