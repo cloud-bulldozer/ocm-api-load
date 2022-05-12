@@ -23,6 +23,7 @@ const (
 	OKFileContentRetunrnError = `{"attack":"access-review","seq":0,"code":300,"timestamp":"2022-03-17T17:12:32.077719034+01:00","latency":788624775,"bytes_out":0,"bytes_in":0,"error":"","body":"Hello World","method":"POST","url":"/api/authorizations/v1/access_review","headers":null}`
 	ErrorFileContent          = `{"attack":"access-review","seq":0,"code":200,"timestamp":"2022-03-17T17:12:32.077719034+01:00","latency":788624775,"bytes_out":0,"bytes_in":0,"error":"","body":"Hello World","method":"POST","url":"/api/authorizations/v1/access_review",`
 	TetsID                    = "4059b202-dc97-4473-9b90-b8bc0e14be1b"
+	Version                   = "version1"
 )
 
 func initConfig() {
@@ -89,6 +90,7 @@ func TestIndexFile(t *testing.T) {
 		_doc.HasBody = true
 	}
 	_doc.Uuid = TetsID
+	_doc.Version = Version
 	OKFileContentWithError, _ := json.Marshal(_doc)
 
 	mock.EXPECT().Add(ctx, gomock.Eq(
@@ -109,6 +111,7 @@ func TestIndexFile(t *testing.T) {
 		_doc.HasBody = true
 	}
 	_doc.Uuid = TetsID
+	_doc.Version = Version
 	OKFileContentNoError, _ := json.Marshal(_doc)
 
 	mock.EXPECT().Add(ctx, gomock.Eq(
@@ -129,6 +132,7 @@ func TestIndexFile(t *testing.T) {
 		_doc.HasBody = true
 	}
 	_doc.Uuid = TetsID
+	_doc.Version = Version
 	OKFileContentRetunrnError, _ := json.Marshal(_doc)
 
 	mock.EXPECT().Add(ctx, gomock.Eq(
@@ -148,19 +152,20 @@ func TestIndexFile(t *testing.T) {
 	tests := []struct {
 		name     string
 		testID   string
+		version  string
 		fileName string
 		wantErr  bool
 	}{
-		{"OKFileContentWithError", TetsID, testfile001, false},
-		{"OKFileContentNoError", TetsID, testfile002, false},
-		{"OKFileContentNoError", TetsID, testfile003, true},
-		{"ErrorFileContent", TetsID, testfile004, true},
-		{"FileDoesNotExist", TetsID, path.Join("tmp", "filename.txt"), true},
+		{"OKFileContentWithError", TetsID, Version, testfile001, false},
+		{"OKFileContentNoError", TetsID, Version, testfile002, false},
+		{"OKFileContentNoError", TetsID, Version, testfile003, true},
+		{"ErrorFileContent", TetsID, Version, testfile004, true},
+		{"FileDoesNotExist", TetsID, Version, path.Join("tmp", "filename.txt"), true},
 	}
 	for _, tt := range tests {
 
 		t.Run(tt.name, func(t *testing.T) {
-			if err := indexer.IndexFile(ctx, tt.testID, tt.fileName, logger); (err != nil) != tt.wantErr {
+			if err := indexer.IndexFile(ctx, tt.testID, tt.version, tt.fileName, logger); (err != nil) != tt.wantErr {
 				t.Errorf("IndexFile() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
