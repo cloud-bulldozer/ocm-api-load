@@ -18,7 +18,7 @@ func BuildConnection(ctx context.Context, gateway, clientID, clientSecret, token
 		Tokens(token).
 		Logger(logger).
 		TransportWrapper(func(wrapped http.RoundTripper) http.RoundTripper {
-			return &CleanClustersTransport{Wrapped: wrapped, Logger: logger}
+			return &CleanTestTransport{Wrapped: wrapped, Logger: logger}
 		}).
 		BuildContext(ctx)
 	if err != nil {

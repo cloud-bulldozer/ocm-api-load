@@ -29,6 +29,7 @@ func TestRegisterNewCluster(ctx context.Context, options *types.TestOptions) err
 		options.Encoder.Encode(res)
 	}
 
+	helpers.Cleanup(ctx, options.Connection)
 	return nil
 }
 
@@ -42,6 +43,7 @@ func TestRegisterExistingCluster(ctx context.Context, options *types.TestOptions
 		options.Encoder.Encode(res)
 	}
 
+	helpers.Cleanup(ctx, options.Connection)
 	return nil
 }
 
@@ -218,6 +220,8 @@ func TestClusterAuthorizations(ctx context.Context, options *types.TestOptions) 
 	for res := range options.Attacker.Attack(targeter, options.Rate, options.Duration, options.TestName) {
 		options.Encoder.Encode(res)
 	}
+
+	helpers.Cleanup(ctx, options.Connection)
 
 	return nil
 }

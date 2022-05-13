@@ -18,29 +18,52 @@ import (
 var createdClusterIDs = map[string]bool{}
 var validateDeletedClusterIDs = make([]string, 0)
 var failedCleanupClusterIDs = make([]string, 0)
+var createdSubcriptionIDs = make([]string, 0)
+var validateDeletedSubcriptionIDs = make([]string, 0)
+var failedDeletedSubcriptionIDs = make([]string, 0)
 
 func Cleanup(ctx context.Context, connection *sdk.Connection) {
-	if len(createdClusterIDs) == 0 {
+	if len(createdClusterIDs) == 0 && len(createdSubcriptionIDs) == 0 {
 		return
 	}
-	connection.Logger().Info(ctx, "About to clean up the following clusters:")
-	for clusterID, deprovision := range createdClusterIDs {
-		connection.Logger().Info(ctx, "Cluster ID: %s, deprovision: %v", clusterID, deprovision)
-		DeleteCluster(ctx, clusterID, deprovision, connection)
-	}
-	for _, clusterID := range validateDeletedClusterIDs {
-		err := verifyClusterDeleted(ctx, clusterID, connection)
-		if err != nil {
-			markFailedCleanup(clusterID)
-		} else {
-			delete(createdClusterIDs, clusterID)
+	if len(createdClusterIDs) > 0 {
+		connection.Logger().Info(ctx, "About to clean up the following clusters:")
+		for clusterID, deprovision := range createdClusterIDs {
+			connection.Logger().Info(ctx, "Cluster ID: %s, deprovision: %v", clusterID, deprovision)
+			DeleteCluster(ctx, clusterID, deprovision, connection)
 		}
+		for _, clusterID := range validateDeletedClusterIDs {
+			err := verifyClusterDeleted(ctx, clusterID, connection)
+			if err != nil {
+				markFailedCleanup(clusterID)
+			} else {
+				delete(createdClusterIDs, clusterID)
+			}
+		}
+		if len(failedCleanupClusterIDs) > 0 {
+			connection.Logger().Warn(ctx, "The following clusters failed deletion: %v", failedCleanupClusterIDs)
+		}
+		createdClusterIDs = make(map[string]bool)
+		failedCleanupClusterIDs = make([]string, 0)
 	}
-	if len(failedCleanupClusterIDs) > 0 {
-		connection.Logger().Warn(ctx, "The following clusters failed deletion: %v", failedCleanupClusterIDs)
+	if len(createdSubcriptionIDs) > 0 {
+		connection.Logger().Info(ctx, "About to delete the following subscriptions:")
+		for _, subscription := range createdSubcriptionIDs {
+			connection.Logger().Info(ctx, "Subscription ID: %s", subscription)
+			DeletedSubscription(ctx, subscription, connection)
+		}
+		for _, subscriptionID := range validateDeletedSubcriptionIDs {
+			err := verifySubscriptionDeleted(ctx, subscriptionID, connection)
+			if err != nil {
+				failedDeletedSubcriptionIDs = append(failedDeletedSubcriptionIDs, subscriptionID)
+			}
+		}
+		if len(failedDeletedSubcriptionIDs) > 0 {
+			connection.Logger().Warn(ctx, "The following subscriptions failed archiving: %v", failedDeletedSubcriptionIDs)
+		}
+		createdSubcriptionIDs = make([]string, 0)
+		failedDeletedSubcriptionIDs = make([]string, 0)
 	}
-	createdClusterIDs = make(map[string]bool)
-	failedCleanupClusterIDs = make([]string, 0)
 }
 
 func DeleteCluster(ctx context.Context, id string, deprovision bool, connection *sdk.Connection) {
@@ -59,6 +82,28 @@ func DeleteCluster(ctx context.Context, id string, deprovision bool, connection 
 	} else {
 		validateDeletedClusterIDs = append(validateDeletedClusterIDs, id)
 		connection.Logger().Info(ctx, "Cluster '%s' deleted", id)
+	}
+}
+
+func DeletedSubscription(ctx context.Context, id string, connection *sdk.Connection) {
+	connection.Logger().Info(ctx, "Deleting subscription '%s'", id)
+	// Send the request to delete subscription
+	response, err := connection.Delete().
+		Path(SubscriptionEndpoint + id).
+		Send()
+	if err != nil {
+		connection.Logger().Error(ctx, "Got error trying to delete subscription '%s', "+
+			"adding to failed delete subscriptions", id)
+		failedDeletedSubcriptionIDs = append(failedDeletedSubcriptionIDs, id)
+	} else if (response.Status() != http.StatusOK) && (response.Status() != http.StatusNoContent) {
+		connection.Logger().Error(ctx, "Failed to delete subscription '%s', "+
+			"got http %d, marking it as failed delete subscription",
+			id, response.Status())
+		failedDeletedSubcriptionIDs = append(failedDeletedSubcriptionIDs, id)
+
+	} else {
+		validateDeletedSubcriptionIDs = append(validateDeletedSubcriptionIDs, id)
+		connection.Logger().Info(ctx, "Subscription '%s' deleted", id)
 	}
 }
 
@@ -134,4 +179,49 @@ func GetServerVersion(ctx context.Context, connection *sdk.Connection) string {
 	metadata := response.Body()
 
 	return metadata.ServerVersion()
+}
+
+func verifySubscriptionDeleted(ctx context.Context, subscriptionID string, connection *sdk.Connection) error {
+	connection.Logger().Info(ctx, "verifying deleted subscription '%s'", subscriptionID)
+	var forcedErr error
+	var getStatus int
+	err := retry.Retry(func(attempt uint) error {
+		getResponse, err := connection.Get().
+			Path(SubscriptionEndpoint + subscriptionID).
+			Send()
+		if err != nil {
+			return err
+		}
+		if getResponse.Status() != 200 {
+			getStatus = getResponse.Status()
+		} else if getResponse.Status() == 200 {
+			body, err := Parse(getResponse.Bytes())
+			if err != nil {
+				return err
+			}
+			status, ok := body["status"]
+			if !ok {
+				return err
+			}
+			if status == "Deprovisioned" {
+				return nil
+			}
+			return forcedErr
+		}
+		return errors.Errorf("Subscription not deleted: %d", getResponse.Status())
+	},
+		strategy.Wait(1*time.Second),
+		strategy.Limit(300))
+	if err != nil {
+		connection.Logger().Error(ctx, "failed to delete subscription cluster '%s': %v", subscriptionID, err)
+		return err
+	}
+	if forcedErr != nil {
+		return fmt.Errorf("failed to wait for subscription '%s' to be deleted", subscriptionID)
+	}
+	if getStatus != 200 {
+		return fmt.Errorf("failed to wait for subscription '%s' to be deleted", subscriptionID)
+	}
+	connection.Logger().Info(ctx, "Subscription '%s' deleted successfully", subscriptionID)
+	return nil
 }

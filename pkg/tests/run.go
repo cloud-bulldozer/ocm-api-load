@@ -35,6 +35,7 @@ func NewRunner(testID, outputDirectory string, logger logging.Logger, conn *sdk.
 }
 
 func (r *Runner) Run(ctx context.Context) error {
+	r.logger.Info(ctx, "UUID: %s", r.testID)
 	duration := viper.GetInt("duration")
 	cooldown := viper.GetInt("cooldown")
 	rate := viper.GetString("rate")
@@ -162,8 +163,8 @@ func (r *Runner) Run(ctx context.Context) error {
 			if err != nil {
 				r.logger.Error(ctx, "obtaining indexer: %s", err)
 			}
-	                serverVersion := helpers.GetServerVersion(ctx, r.connection)
-	                r.logger.Info(ctx, "server version %s", serverVersion)
+			serverVersion := helpers.GetServerVersion(ctx, r.connection)
+			r.logger.Info(ctx, "server version %s", serverVersion)
 			err = indexer.IndexFile(ctx, r.testID, serverVersion, resultsFile.Name(), r.logger)
 			if err != nil {
 				r.logger.Error(ctx, "Error during ES indexing: %s", err)

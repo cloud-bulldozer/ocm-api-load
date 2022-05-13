@@ -14,7 +14,7 @@ RUN curl -L -o ocm-load-test-linux.tgz \
     cp ocm-load-test /usr/local/bin/ && \
     chmod 755 /usr/local/bin/ocm-load-test
 
-COPY config.example.yaml /workdir/config.yaml
+COPY config.example.yaml /workdir/config.example.yaml
 RUN pip3 install --upgrade pip
 RUN pip3 install -r requirements.txt
 

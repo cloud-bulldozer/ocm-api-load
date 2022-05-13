@@ -17,13 +17,13 @@ from docx import Document
 from docx.shared import Inches
 from elasticsearch import Elasticsearch, helpers
 
-
 # Configure Logging
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
 def generate_graphs(directory):
+    summaries = read_summaries(directory)
     graphs = {}
     # Walking through the folder to find all the result files
     # ignoring dirname since we don't need it in this implementation
@@ -44,7 +44,7 @@ def generate_graphs(directory):
                 j = 0
                 index_start = 1
                 chunk = 20000
-                for df in pd.read_json(root+'/'+filename,
+                for df in pd.read_json(root + '/' + filename,
                                        lines=True,
                                        chunksize=chunk):
                     df.index += index_start
@@ -66,7 +66,7 @@ def generate_graphs(directory):
                 data = [{
                     'type': 'scatter',
                     'x': df['timestamp'],
-                    'y': df['latency']/1000000,
+                    'y': df['latency'] / 1000000,
                     'mode': 'markers',
                     'transforms': [{
                         'type': 'groupby',
@@ -97,17 +97,51 @@ def generate_graphs(directory):
                               'ticklabelmode': "period"},
                     'yaxis': {'title': 'Milliseconds (log)',
                               'type': 'log'},
+                    'shapes': [{'fillcolor': '#FF0000',
+                                'line': {'color': '#FF0000',
+                                         'width': 2,
+                                         'dash': 'dash'},
+                                'type': 'line',
+                                'x0': 0,
+                                'x1': 1,
+                                'xref': 'x domain',
+                                'y0': summaries[matches.group(1)]['99th']/1e6,
+                                'y1': summaries[matches.group(1)]['99th']/1e6,
+                                'yref': 'y'},
+                               {'fillcolor': '#FF0000',
+                                'line': {'color': '#FF0000',
+                                         'width': 2,
+                                         'dash': 'dash'},
+                                'type': 'line',
+                                'x0': 0.905,
+                                'x1': 0.925,
+                                'xref': 'x domain',
+                                'y0': -0.035,
+                                'y1': -0.035,
+                                'yref': 'y domain'}],
+                    'annotations': [{'font': {'color': 'black', 'size': 12},
+                                     'showarrow': False,
+                                     'text': 'P99 Latency',
+                                     'xref': 'x domain',
+                                     'x': '0.90',
+                                     'yref': 'y domain',
+                                     'y': '-0.05',
+                                     }]
                 }
+
+                print(layout)
 
                 fig_dict = {'data': data, 'layout': layout}
 
                 pio.write_image(fig_dict,
-                                root+'/'+matches.group(1)+".png",
+                                root + '/' + matches.group(1) + ".png",
                                 engine="kaleido",
                                 width=1600,
                                 height=900,
                                 validate=False)
-                graphs[matches.group(1)] = root+'/'+matches.group(1)+".png"
+                graphs[matches.group(1)] = os.path.join(root,
+                                                        matches.group(1),
+                                                        ".png")
                 logger.info(f'Graph saved to: {graphs[matches.group(1)]}')
                 os.remove('{}/{}.db'.format(root, matches.group(1)))
     return graphs
@@ -147,7 +181,7 @@ def show_graphs(directory, filename):
         data = [{
             'type': 'scatter',
             'x': df['timestamp'],
-            'y': df['latency']/1000000,
+            'y': df['latency'] / 1000000,
             'mode': 'markers',
             'transforms': [
                 {'type': 'groupby',
@@ -168,7 +202,7 @@ def show_graphs(directory, filename):
                      'value': {'marker': {'color': 'darkred',
                                           'symbol': 'diamond-tall'}}}]
                  }]
-            }]
+        }]
 
         layout = {
             'title': '<b>Latency per Request: {}</b>'.format(matches.group(2)),
@@ -227,7 +261,7 @@ def cma_graph(directory, filename):
         data = [{
             'type': 'line',
             'x': df_t.index,
-            'y': df_t['cma']/1000000,
+            'y': df_t['cma'] / 1000000,
         }]
 
         layout = {
@@ -316,6 +350,7 @@ def generate_summaries(directory):
     except FileNotFoundError:
         os.mkdir('{}/summaries'.format(directory))
     else:
+        print(Exception())
         logger.error('Error with summaries folder.')
         exit(1)
 
@@ -327,9 +362,9 @@ def generate_summaries(directory):
             if 'summaries' not in root and regex.match(filename) and \
                     matches.group(3) == 'json':
                 _summary_name = "{}/summaries/{}_{}-summary.json".format(
-                               directory,
-                               matches.group(1),
-                               matches.group(2))
+                                directory,
+                                matches.group(1),
+                                matches.group(2))
                 logger.info(f'Generating summary for: {matches.group(2)}')
                 subprocess.run(["vegeta", "report", "--type", "json",
                                 "--output",
@@ -351,7 +386,7 @@ def read_summaries(directory):
             if 'summaries' in root and regex.match(filename) and \
                     matches.group(2) == 'json':
                 logger.info(f'Reading summary: {filename}')
-                df = pd.read_json(root+'/'+filename, lines=True)
+                df = pd.read_json(root + '/' + filename, lines=True)
 
                 lat = df['latencies'][0]
                 summaries[matches.group(1)] = {
@@ -359,7 +394,7 @@ def read_summaries(directory):
                     'rate':         float(df['rate']),
                     'duration':     int(df['duration']),
                     'min':          int(lat['min']),
-                    'mean':         int(lat['mean']),
+                    '99th':         int(lat['99th']),
                     'max':          int(lat['max']),
                     'success':      float(df['success']),
                     'status_codes': df['status_codes'][0],
@@ -393,7 +428,7 @@ def write_docx(directory, summaries, graphs, filename):
         row_cells = table.add_row().cells
         row_cells[0].text = r
         row_cells[1].text = '{:.2f}/s for {:.2f} minutes'.format(
-            summaries[r]['rate'], summaries[r]['duration']/6e10)
+            summaries[r]['rate'], summaries[r]['duration'] / 6e10)
         row_cells[2].text = ''
 
     document.add_heading('Per endpoint data', level=2)
@@ -405,18 +440,18 @@ def write_docx(directory, summaries, graphs, filename):
                 summaries[r]['requests'], summaries[r]['rate']))
         p.add_run(
             'Duration\t\t{:.2f} minutes\n'.format(
-                summaries[r]['duration']/6e10))
+                summaries[r]['duration'] / 6e10))
         p.add_run('Latencies\n')
 
+        document.add_paragraph('99th Percentile: {:.4f} ms'.format(
+            summaries[r]['99th'] / 1e6), style='List Bullet')
         document.add_paragraph('Min: {:.4f} ms'.format(
-            summaries[r]['min']/1e6), style='List Bullet')
-        document.add_paragraph('Mean: {:.4f} ms'.format(
-            summaries[r]['mean']/1e6), style='List Bullet')
+            summaries[r]['min'] / 1e6), style='List Bullet')
         document.add_paragraph('Max: {:.4f} ms'.format(
-            summaries[r]['max']/1e6), style='List Bullet')
+            summaries[r]['max'] / 1e6), style='List Bullet')
 
         p2 = document.add_paragraph('Success\t\t{:.2f}%\n'.format(
-            summaries[r]['success']*100))
+            summaries[r]['success'] * 100))
         p2.add_run('Status Codes\t\t\n{}\n'.format(
             summaries[r]['status_codes']))
         p2.add_run('Error Set\t\t\n{}\n'.format(summaries[r]['errors']))
@@ -428,7 +463,7 @@ def write_docx(directory, summaries, graphs, filename):
     document.add_page_break()
     document.add_heading('Overall Screenshots', level=2)
     if '.docx' not in filename:
-        filename = filename+'.docx'
+        filename = filename + '.docx'
     document.save('{}/{}'.format(directory, filename))
 
 
@@ -462,8 +497,8 @@ def upload_files(args):
 
     response = requests.post(f'{args.snappy_server}/auth/jwt/login',
                              data={
-                                'password': args.snappy_password,
-                                'username': args.snappy_user})
+                                 'password': args.snappy_password,
+                                 'username': args.snappy_user})
     if response.status_code != 200:
         logger.error(f'Authentication failed: {response.json()}')
         sys.exit(1)
@@ -664,7 +699,6 @@ def main():
         generate_summaries(args.directory)
     elif args.action_command == 'report':
         graphs = generate_graphs(args.directory)
-        generate_summaries(args.directory)
         summaries = read_summaries(args.directory)
         write_docx(args.directory, summaries, graphs, args.filename)
     elif args.action_command == 'upload':
