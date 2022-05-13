@@ -1,4 +1,4 @@
-VERSION := v0.3.3
+VERSION := v0.4.0
 NAME := ocm-load-test
 # Enable Go modules:
 export GO111MODULE=on
