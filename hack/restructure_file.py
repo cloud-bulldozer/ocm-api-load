@@ -1,26 +1,27 @@
 import json
 import sys
+import argh
 
 filename= sys.argv[1]
 savefile= sys.argv[2]
 printfile= sys.argv[3]
 
 
-def has_body(list1):
+def has_body(item):
     message=""
-    if list1["body"]:
-        message="True"
+    if item["body"]:
+        hasbody="True"
     else:
-        message= "False"
-    return message
+        hasbody= "False"
+    return hasbody
 
-def has_error(list2):
+def has_error(item):
     message1=""
-    if 200 <= (int(list2["code"])) <=299 :
-        message1="False"
+    if 200 <= (int(item["code"])) <=299 :
+        haserror="False"
     else:
-        message1= "True"
-    return message1
+        haserror= "True"
+    return haserror
 
 
 
@@ -52,5 +53,5 @@ with open(savefile,"w") as f:
     json.dump(data, f)
 
 # Pretty print the loaded file
-if printfile =='true':
+if printfile=='True':
     print(json.dumps(data, indent=4,sort_keys=True))
