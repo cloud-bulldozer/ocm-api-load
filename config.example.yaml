@@ -1,24 +1,77 @@
 ---
-ocm-token: eyJhbGciOiJIUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJhZDUyMjdhMy1iY2ZkLTRjZjAtYTdiNi0zOTk4MzVhMDg1NjYifQ.eyJpYXQiOjE2NTc2MzU1MDUsImp0aSI6IjU5NTI3OWY4LWZmMGYtNGEwYi1iY2U3LWZjYjNlM2MwODE3YyIsImlzcyI6Imh0dHBzOi8vc3NvLnJlZGhhdC5jb20vYXV0aC9yZWFsbXMvcmVkaGF0LWV4dGVybmFsIiwiYXVkIjoiaHR0cHM6Ly9zc28ucmVkaGF0LmNvbS9hdXRoL3JlYWxtcy9yZWRoYXQtZXh0ZXJuYWwiLCJzdWIiOiJmOjUyOGQ3NmZmLWY3MDgtNDNlZC04Y2Q1LWZlMTZmNGZlMGNlNjpyaC1lZS1zYWhzaGFoIiwidHlwIjoiT2ZmbGluZSIsImF6cCI6ImNsb3VkLXNlcnZpY2VzIiwibm9uY2UiOiI4YmE3NTJjYy0wNzVmLTRkZGEtODgyNC1hYWJjMTFmOWNlMDkiLCJzZXNzaW9uX3N0YXRlIjoiZjNkNmY4YmMtNjc4Ny00OWQ0LWFlMzEtOTY4NTIzMWI2NmNmIiwic2NvcGUiOiJvcGVuaWQgYXBpLmlhbS5zZXJ2aWNlX2FjY291bnRzIG9mZmxpbmVfYWNjZXNzIiwic2lkIjoiZjNkNmY4YmMtNjc4Ny00OWQ0LWFlMzEtOTY4NTIzMWI2NmNmIn0.fAxhGEZygXIqsNDuj-DYxu6Iap4EIPU6N5YVUfBfxUo     
+ocm-token: xxxXXXyyyYYYzzzZZZ           # Offline token for authentication.
 ocm-token-url: https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/token
-gateway-url: https://api.integration.openshift.com      
+gateway-url: http://localhost:8000  # Gateway URL.
+client:
+  - id: cloud-services              # OpenID client identifier.
+  - secret: "secure-secret"         # OpenID client secret.
 aws:
-  - region: "us-east-1"
-    access-key: "AKIAWBVQ7Y3UYBMZZBOG"
-    secret-access-key: "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"
-    account-id: "415909267177"
+  - region: "us-west-1"
+    access-key: "ASD7ASFET65FFGHDFFS"
+    secret-access-key: "fjhgsadf6#$!@%&/dfghdfgdsdf"
+    account-id: "123434565665"
+  - region: "us-west-2"
+    access-key: "ASD7ASFET65FFGHDFFS"
+    secret-access-key: "fjhgsadf6#$!@%&/dfghdfgdsdf"
+    account-id: "123434565665"
 elastic:
-  server: "https://search-perfscale-dev-chmf5l4sh66lvxbnadi4bznl3a.us-west-2.es.amazonaws.com"
-# user: "elastic"
-# password: "password"
-  index: "test_sahil"
+  server: "http://elastic.apps.perfscale.devcluster.openshift.com/"
+  user: "user"
+  password: "password"
+  index: "es-index"
   insecure-skip-verify: true
-duration: 1
+duration: 2
 cooldown: 10
-output-path: "/home/sahshah/Desktop/Task1/results"
-rate: "60/s"
-# test-id: new-test-sahil
+output-path: "./results"
+rate: "5/s"
+test-id: new-test
+ramp-type: exponential
+start-rate: 1
+end-rate: 120
+ramp-steps: 6
 tests:
+  self-access-token:
+    rate: "1000/h"
+    duration: 1
+  list-subscriptions:
+    rate: "2000/h"
+    duration: 1
+  access-review:
+    rate: "100/s"
+    duration: 1
+  register-new-cluster:
+    rate: "1000/h"
+    duration: 1
+  register-existing-cluster:
+    rate: "25/s"
+    duration: 1
+  create-cluster:
+    rate: "10/s"
+    duration: 1
+  list-clusters:
+    rate: "10/s"
+    duration: 1
+  get-current-account:
+    rate: "6/m"
+    duration: 1
+  quota-cost:
+    rate: "1000/h"
+    duration: 1
+  resource-review:
+    rate: "2000/h"
+    duration: 1
+  cluster-authorizations:
+    duration: 30
+    ramp-type: linear
+    start-rate: 1
+    end-rate: 50
+    ramp-steps: 6
+  self-terms-review:
+    duration: 30
+    ramp-type: exponential
+    start-rate: 1
+    end-rate: 50
+    ramp-steps: 6
   certificates:
-    rate: "60/s"
+    rate: "2/s"
     duration: 1
