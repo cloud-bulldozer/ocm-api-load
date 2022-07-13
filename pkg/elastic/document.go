@@ -17,4 +17,15 @@ type doc struct {
 	HasError  bool      `json:"has_error"`
 	HasBody   bool      `json:"has_body"`
 	Version   string    `json:"version"`
+	Headers   Headers	
+}
+
+type Headers struct {
+	Content_Length []string  `json:"Content-Length"`
+	Content_Type []string    `json:"Content-Type"`
+	Date []string            `json:"Date"`
+	Server []string          `json:"Server"`
+	Vary []string            `json:"Vary"`
+	X_Envoy_Upstream_Service_Time []string `json:"X-Envoy-Upstream-Service-Time"`
+	X_Operation_Id []string  `json:"X-Operation-Id"`
 }
