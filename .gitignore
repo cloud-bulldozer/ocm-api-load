@@ -11,5 +11,4 @@ release
 # GDriveAPI
 credentials.json
 token.pickle
-YOUR-FILE-WITH-SENSITIVE-DATA
 config.example.yaml
