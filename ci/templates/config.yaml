@@ -59,6 +59,3 @@ tests:
   get-services:
     rate: "$GET_SERVICES_RATE"
     duration: $GET_SERVICES_DURATION
-  patch-services:
-    rate: "$PATCH_SERVICES_RATE"
-    duration: $PATCH_SERVICES_DURATION
