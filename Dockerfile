@@ -1,6 +1,7 @@
 FROM  registry.access.redhat.com/ubi9:latest
 
-RUN dnf install -y --nodocs skopeo
+RUN dnf install -y --nodocs skopeo && \
+    dnf clean all
 COPY image_resources/centos9.repo image_resources/centos9-appstream.repo /etc/yum.repos.d/
 RUN dnf install -y --nodocs python3-pip python3-devel gcc && \
     dnf install -y --nodocs --nobest rsync redis && \
