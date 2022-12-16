@@ -204,7 +204,7 @@ func addTestProperties(body string) (string, error) {
 	}
 	properties["user"] = user.Name
 	cluster["properties"] = properties
-	if cluster["expiration_timestamp"] == "" {
+	if cluster["expiration_timestamp"] == nil {
 		cluster["expiration_timestamp"] = time.Now().Add(time.Hour).Format(time.RFC3339)
 	}
 	result, err := json.Marshal(cluster)
