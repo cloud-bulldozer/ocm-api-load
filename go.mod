@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/Rican7/retry v0.3.1
 	github.com/opensearch-project/opensearch-go v1.1.0
-	github.com/openshift-online/ocm-sdk-go v0.1.320
+	github.com/openshift-online/ocm-sdk-go v0.1.338
 	github.com/satori/go.uuid v1.2.0
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/viper v1.15.0
