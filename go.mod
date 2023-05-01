@@ -7,7 +7,7 @@ require (
 	github.com/opensearch-project/opensearch-go v1.1.0
 	github.com/openshift-online/ocm-sdk-go v0.1.320
 	github.com/satori/go.uuid v1.2.0
-	github.com/spf13/cobra v1.6.1
+	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.15.0
 	github.com/tsenart/vegeta/v12 v12.8.4
 	github.com/zgalor/weberr v0.8.2
@@ -28,7 +28,7 @@ require (
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/css v1.0.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/inconshreveable/mousetrap v1.0.1 // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/influxdata/tdigest v0.0.1 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
