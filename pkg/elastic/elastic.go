@@ -4,73 +4,42 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 
+	"github.com/cloud-bulldozer/go-commons/indexers"
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/logging"
-	opensearch "github.com/opensearch-project/opensearch-go"
-	"github.com/opensearch-project/opensearch-go/opensearchutil"
 	"github.com/spf13/viper"
 )
 
-type ESIndexer struct {
-	BulkIndexer opensearchutil.BulkIndexer
-}
-
-func NewESIndexer(ctx context.Context, logger logging.Logger) (*ESIndexer, error) {
-	bulkIndexer, err := newBulkIndexer(ctx, logger)
-	if err != nil {
-		return nil, err
-	}
-	return &ESIndexer{
-		BulkIndexer: bulkIndexer,
-	}, nil
-
-}
-
-func newClient(ctx context.Context, logger logging.Logger) (*opensearch.Client, error) {
+func newClient(ctx context.Context, logger logging.Logger) (*indexers.Indexer, error) {
 	logger.Info(ctx, "Building ES configuration")
 	logger.Debug(ctx, "Using server: %s", viper.GetString("elastic.server"))
-	cfg := opensearch.Config{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: viper.GetBool("elastic.insecure-skip-verify")},
-		},
-		Addresses: []string{
+	config := indexers.IndexerConfig{
+		Type: indexers.ElasticIndexer,
+		Servers: []string{
 			viper.GetString("elastic.server"),
 		},
-		Username: viper.GetString("elastic.user"),
-		Password: viper.GetString("elastic.password"),
+		Index:              viper.GetString("elastic.index"),
+		InsecureSkipVerify: viper.GetBool("elastic.insecure-skip-verify"),
+		// Username: viper.GetString("elastic.user"),
+		// Password: viper.GetString("elastic.password"),
 	}
-	return opensearch.NewClient(cfg)
-
-}
-
-func newBulkIndexer(ctx context.Context, logger logging.Logger) (opensearchutil.BulkIndexer, error) {
-	cli, err := newClient(ctx, logger)
+	client, err := indexers.NewIndexer(config)
 	if err != nil {
 		return nil, err
 	}
-
-	bulkConfig := opensearchutil.BulkIndexerConfig{
-		Index:  viper.GetString("elastic.index"),
-		Client: cli,
-		OnError: func(ctx context.Context, err error) {
-			logger.Error(ctx, "%s", err)
-		},
-		ErrorTrace: true,
-	}
-	bulkIndexer, err := opensearchutil.NewBulkIndexer(bulkConfig)
-	if err != nil {
-		return nil, err
-	}
-	return bulkIndexer, nil
+	return client, nil
 }
 
-func (in *ESIndexer) IndexFile(ctx context.Context, testID string, version string, fileName string, logger logging.Logger) error {
+func IndexFile(ctx context.Context, testID string, version string, fileName string, logger logging.Logger) error {
+	indexer, err := newClient(ctx, logger)
+	if err != nil {
+		logger.Error(ctx, "obtaining indexer: %s", err)
+	}
+
 	file, err := os.Open(fileName)
 	if err != nil {
 		return err
@@ -79,6 +48,7 @@ func (in *ESIndexer) IndexFile(ctx context.Context, testID string, version strin
 
 	fileReader := bufio.NewReader(file)
 
+	docs := []interface{}{}
 	var errors string
 	for {
 		line, pref, err := fileReader.ReadLine()
@@ -119,26 +89,17 @@ func (in *ESIndexer) IndexFile(ctx context.Context, testID string, version strin
 		}
 		_doc.Uuid = testID
 		_doc.Version = version
-		m, err := json.Marshal(_doc)
-		if err != nil {
-			errors = fmt.Sprintf("%s\n%s", errors, err)
-			continue
-		}
-		err = in.BulkIndexer.Add(ctx, opensearchutil.BulkIndexerItem{
-			Body:   bytes.NewReader(m),
-			Action: "index",
-		})
-		if err != nil {
-			errors = fmt.Sprintf("%s\n%s", errors, err)
-		}
+
+		docs = append(docs, _doc)
+	}
+	resp, err := (*indexer).Index(docs, indexers.IndexingOpts{
+		JobName: testID,
+	})
+	if err != nil {
+		errors = fmt.Sprintf("%s\n%s", errors, err)
 	}
 
-	in.BulkIndexer.Close(ctx)
-	logger.Info(ctx,
-		"BulkIndexer Stats:\nNumAdded: %d\t\tNumCreate: %d\t\tNumFailed: %d",
-		in.BulkIndexer.Stats().NumAdded,
-		in.BulkIndexer.Stats().NumCreated,
-		in.BulkIndexer.Stats().NumFailed)
+	logger.Info(ctx, resp)
 
 	if errors != "" {
 		return fmt.Errorf("BulkIndexer Error: %s", errors)
