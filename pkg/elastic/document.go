@@ -1,24 +1,12 @@
 package elastic
 
 import (
-	"net/http"
-	"time"
+	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
 
 type doc struct {
-	Attack    string      `json:"attack"`
-	Uuid      string      `json:"uuid"`
-	Code      int         `json:"code"`
-	Timestamp time.Time   `json:"timestamp"`
-	Latency   int         `json:"latency"`
-	BytesOut  int         `json:"bytes_out"`
-	BytesIn   int         `json:"bytes_in"`
-	Error     string      `json:"error"`
-	Body      string      `json:"body"`
-	Method    string      `json:"method"`
-	URL       string      `json:"url"`
-	HasError  bool        `json:"has_error"`
-	HasBody   bool        `json:"has_body"`
-	Version   string      `json:"version"`
-	Headers   http.Header `json:"headers"`
+	Uuid    string         `json:"uuid"`
+	Version string         `json:"version"`
+	Attack  string         `json:"attack"`
+	Metrics vegeta.Metrics `json:"metrics"`
 }

@@ -27,7 +27,7 @@ func TestRegisterNewCluster(ctx context.Context, options *types.TestOptions) err
 	targeter := generateClusterRegistrationTargeter(ctx, options)
 
 	for res := range options.Attacker.Attack(targeter, options.Rate, options.Duration, testName) {
-		options.Encoder.Encode(res)
+		options.Metrics.Add(res)
 	}
 
 	helpers.Cleanup(ctx, options.Connection)
@@ -41,7 +41,7 @@ func TestRegisterExistingCluster(ctx context.Context, options *types.TestOptions
 	targeter := generateClusterReRegistrationTargeter(ctx, quantity, options)
 
 	for res := range options.Attacker.Attack(targeter, options.Rate, options.Duration, testName) {
-		options.Encoder.Encode(res)
+		options.Metrics.Add(res)
 	}
 
 	helpers.Cleanup(ctx, options.Connection)
@@ -49,7 +49,7 @@ func TestRegisterExistingCluster(ctx context.Context, options *types.TestOptions
 }
 
 // getAuthorizationToken will fetch and return the current user's Authorization
-//Token which is required by certain endpoints such as Cluster Registration.
+// Token which is required by certain endpoints such as Cluster Registration.
 func getAuthorizationToken(ctx context.Context, options *types.TestOptions) string {
 	result, err := options.Connection.AccountsMgmt().V1().AccessToken().Post().Send()
 	if err != nil {
@@ -219,7 +219,7 @@ func TestClusterAuthorizations(ctx context.Context, options *types.TestOptions) 
 
 	// Execute the HTTP Requests; repeating as needed to meet the specified duration
 	for res := range options.Attacker.Attack(targeter, options.Rate, options.Duration, options.TestName) {
-		options.Encoder.Encode(res)
+		options.Metrics.Add(res)
 	}
 
 	helpers.Cleanup(ctx, options.Connection)

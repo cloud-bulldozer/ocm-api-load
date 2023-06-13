@@ -21,7 +21,7 @@ func TestCreateService(ctx context.Context, options *types.TestOptions) error {
 	targeter := generateCreateServiceTargeter(ctx, options.ID, options.Method, options.Path, options.Logger)
 
 	for res := range options.Attacker.Attack(targeter, options.Rate, options.Duration, testName) {
-		options.Encoder.Encode(res)
+		options.Metrics.Add(res)
 	}
 
 	helpers.Cleanup(ctx, options.Connection)
@@ -58,7 +58,7 @@ func generateCreateServiceTargeter(ctx context.Context, ID, method, url string, 
 		arn = strings.Replace(arn, "{acctName}", ccsAccountName, -1)
 		creatorProps := map[string]string{
 			"rosa_creator_arn": arn,
-			"fake_cluster": "true",
+			"fake_cluster":     "true",
 		}
 		awsTags := map[string]string{
 			"User": "pocm-perf",
@@ -74,7 +74,7 @@ func generateCreateServiceTargeter(ctx context.Context, ID, method, url string, 
 						AccessKeyID(ccsAccessKey).
 						SecretAccessKey(ccsSecretKey).
 						AccountID(ccsAccountID).
-					        Tags(awsTags),
+						Tags(awsTags),
 				).
 				Nodes(v1.NewClusterNodes().AvailabilityZones(fmt.Sprintf("%sa", ccsRegion))).
 				Properties(creatorProps).
@@ -125,7 +125,7 @@ func TestPatchService(ctx context.Context, options *types.TestOptions) error {
 	arn = strings.Replace(arn, "{acctName}", ccsAccountName, -1)
 	creatorProps := map[string]string{
 		"rosa_creator_arn": arn,
-		"fake_cluster": "true",
+		"fake_cluster":     "true",
 	}
 	awsTags := map[string]string{
 		"User": "pocm-perf",
@@ -145,7 +145,7 @@ func TestPatchService(ctx context.Context, options *types.TestOptions) error {
 						AccessKeyID(ccsAccessKey).
 						SecretAccessKey(ccsSecretKey).
 						AccountID(ccsAccountID).
-					        Tags(awsTags),
+						Tags(awsTags),
 				).
 				Nodes(v1.NewClusterNodes().AvailabilityZones(fmt.Sprintf("%sa", ccsRegion))).
 				Properties(creatorProps).
@@ -196,7 +196,7 @@ func TestPatchService(ctx context.Context, options *types.TestOptions) error {
 	targeter := generatePatchServiceTargeter(ctx, options.ID, options.Method, options.Path, options.Logger, serviceIds)
 
 	for res := range options.Attacker.Attack(targeter, options.Rate, options.Duration, testName) {
-		options.Encoder.Encode(res)
+		options.Metrics.Add(res)
 	}
 
 	helpers.Cleanup(ctx, options.Connection)

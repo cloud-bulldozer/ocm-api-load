@@ -1,17 +1,16 @@
 package elastic
 
 import (
-	"bufio"
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
+	"path"
 
 	"github.com/cloud-bulldozer/go-commons/indexers"
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/logging"
 	"github.com/spf13/viper"
+	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
 
 func newClient(ctx context.Context, logger logging.Logger) (*indexers.Indexer, error) {
@@ -24,8 +23,6 @@ func newClient(ctx context.Context, logger logging.Logger) (*indexers.Indexer, e
 		},
 		Index:              viper.GetString("elastic.index"),
 		InsecureSkipVerify: viper.GetBool("elastic.insecure-skip-verify"),
-		// Username: viper.GetString("elastic.user"),
-		// Password: viper.GetString("elastic.password"),
 	}
 	client, err := indexers.NewIndexer(config)
 	if err != nil {
@@ -34,73 +31,40 @@ func newClient(ctx context.Context, logger logging.Logger) (*indexers.Indexer, e
 	return client, nil
 }
 
-func IndexFile(ctx context.Context, testID string, version string, fileName string, logger logging.Logger) error {
+func IndexFile(ctx context.Context, testID string, version string, attack string, fileName string, metrics vegeta.Metrics, logger logging.Logger) error {
 	indexer, err := newClient(ctx, logger)
 	if err != nil {
 		logger.Error(ctx, "obtaining indexer: %s", err)
 	}
 
-	file, err := os.Open(fileName)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	fileReader := bufio.NewReader(file)
-
-	docs := []interface{}{}
 	var errors string
-	for {
-		line, pref, err := fileReader.ReadLine()
-		if err == io.EOF {
-			break
-		}
+	_doc := doc{}
+	_doc.Metrics = metrics
+	_doc.Uuid = testID
+	_doc.Version = version
+	_doc.Attack = attack
 
-		fullLine := bytes.Join([][]byte{line}, []byte(""))
-		if pref {
-			for {
-				l, p, err := fileReader.ReadLine()
-				if err == io.EOF {
-					break
-				}
-				if err != nil {
-					errors = fmt.Sprintf("%s\n%s", errors, err)
-					break
-				}
-				fullLine = bytes.Join([][]byte{fullLine, l}, []byte(""))
-
-				if !p {
-					break
-				}
-			}
-		}
-
-		_doc := doc{}
-		err = json.Unmarshal(fullLine, &_doc)
-		if err != nil {
-			errors = fmt.Sprintf("%s\n%s", errors, err)
-			continue
-		}
-		if _doc.Error != "" {
-			_doc.HasError = true
-		}
-		if _doc.Body != "" {
-			_doc.HasBody = true
-		}
-		_doc.Uuid = testID
-		_doc.Version = version
-
-		docs = append(docs, _doc)
-	}
-	resp, err := (*indexer).Index(docs, indexers.IndexingOpts{
+	resp, err := (*indexer).Index([]interface{}{_doc}, indexers.IndexingOpts{
 		JobName: testID,
 	})
 	if err != nil {
 		errors = fmt.Sprintf("%s\n%s", errors, err)
 	}
 
-	logger.Info(ctx, resp)
+	file := path.Join(viper.GetString("output-path"), fileName)
 
+	logger.Info(ctx, "Writing results to: %s", file)
+	data, err := json.Marshal(_doc)
+	if err != nil {
+		logger.Error(ctx, "Error during json marshal: %s", err)
+	} else {
+		err = os.WriteFile(file, data, 0666)
+		if err != nil {
+			logger.Error(ctx, "Error writing file: %s", err)
+		}
+	}
+
+	logger.Info(ctx, resp)
 	if errors != "" {
 		return fmt.Errorf("BulkIndexer Error: %s", errors)
 	}

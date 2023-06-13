@@ -28,6 +28,6 @@ type TestOptions struct {
 	Handler    func(context.Context, *TestOptions) (err error) // Function which tests the given endpoint
 	Attacker   *vegeta.Attacker
 	Connection *sdk.Connection
-	Encoder    *vegeta.Encoder // Encodes results and writes them to a File
+	Metrics    *vegeta.Metrics // Encodes results and writes them to a File
 	Logger     logging.Logger
 }
