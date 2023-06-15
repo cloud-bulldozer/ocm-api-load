@@ -5,18 +5,18 @@ go 1.17
 require (
 	github.com/Rican7/retry v0.3.1
 	github.com/cloud-bulldozer/go-commons v1.0.1
-	github.com/opensearch-project/opensearch-go v1.1.0
 	github.com/openshift-online/ocm-sdk-go v0.1.320
 	github.com/satori/go.uuid v1.2.0
 	github.com/spf13/cobra v1.6.1
-	github.com/spf13/viper v1.15.0
+	github.com/spf13/viper v1.16.0
 	github.com/tsenart/vegeta/v12 v12.8.4
 	github.com/zgalor/weberr v0.8.2
 )
 
 require (
 	github.com/elastic/go-elasticsearch/v7 v7.13.1 // indirect
-	github.com/pelletier/go-toml/v2 v2.0.6 // indirect
+	github.com/opensearch-project/opensearch-go v1.1.0 // indirect
+	github.com/pelletier/go-toml/v2 v2.0.8 // indirect
 )
 
 require (
@@ -27,7 +27,6 @@ require (
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/golang-jwt/jwt/v4 v4.4.1 // indirect
 	github.com/golang/glog v1.0.0 // indirect
-	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/css v1.0.0 // indirect
@@ -50,16 +49,16 @@ require (
 	github.com/prometheus/common v0.32.1 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
 	github.com/sirupsen/logrus v1.6.0 // indirect
-	github.com/spf13/afero v1.9.3 // indirect
-	github.com/spf13/cast v1.5.0 // indirect
+	github.com/spf13/afero v1.9.5 // indirect
+	github.com/spf13/cast v1.5.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.4.2 // indirect
 	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e // indirect
-	golang.org/x/net v0.8.0 // indirect
-	golang.org/x/sys v0.6.0 // indirect
-	golang.org/x/text v0.8.0 // indirect
-	google.golang.org/protobuf v1.28.1 // indirect
+	golang.org/x/net v0.10.0 // indirect
+	golang.org/x/sys v0.8.0 // indirect
+	golang.org/x/text v0.9.0 // indirect
+	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
