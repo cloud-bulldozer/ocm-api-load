@@ -21,7 +21,7 @@ func TestStaticEndpoint(ctx context.Context, options *types.TestOptions) error {
 
 	// Execute the HTTP Requests; repeating as needed to meet the specified duration
 	for res := range options.Attacker.Attack(targeter, options.Rate, options.Duration, options.TestName) {
-		options.Encoder.Encode(res)
+		options.Metrics.Add(res)
 	}
 
 	return nil

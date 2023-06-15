@@ -20,7 +20,7 @@ func TestCreateCluster(ctx context.Context, options *types.TestOptions) error {
 	targeter := generateCreateClusterTargeter(ctx, options.ID, options.Method, options.Path, options.Logger)
 
 	for res := range options.Attacker.Attack(targeter, options.Rate, options.Duration, testName) {
-		options.Encoder.Encode(res)
+		options.Metrics.Add(res)
 	}
 
 	helpers.Cleanup(ctx, options.Connection)

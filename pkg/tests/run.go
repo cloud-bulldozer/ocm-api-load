@@ -71,17 +71,17 @@ func (r *Runner) Run(ctx context.Context) error {
 				// Open a file and create an encoder that will be used to store the
 				// results for each test.
 				fileName := fmt.Sprintf("%s_%s_%d.json", r.testID, testOptions.TestName, index)
-				resultsFile, err := helpers.CreateFile(fileName, r.outputDirectory)
-				if err != nil {
-					return err
+
+				var metrics vegeta.Metrics
+				metrics.Histogram = &vegeta.Histogram{
+					Buckets: vegeta.Buckets{time.Millisecond},
 				}
-				encoder := vegeta.NewJSONEncoder(resultsFile)
 
 				// Bind "Test Harness"
 				testOptions.ID = r.testID
 				testOptions.Attacker = attacker
 				testOptions.Connection = conn
-				testOptions.Encoder = &encoder
+				testOptions.Metrics = &metrics
 				testOptions.Logger = r.logger
 
 				// Create the vegeta rate with the config values
@@ -142,26 +142,16 @@ func (r *Runner) Run(ctx context.Context) error {
 					}
 				}
 
-				// Cleanup (cannot defer as it must happen for each test in the loop)
-				r.logger.Info(ctx, "Results written to: %s", fileName)
-				err = resultsFile.Close()
+				// Index result file
+
+				serverVersion := helpers.GetServerVersion(ctx, conn)
+				r.logger.Info(ctx, "server version %s", serverVersion)
+				err = elastic.IndexFile(ctx, r.testID, serverVersion, testOptions.TestName, fileName, *testOptions.Metrics, r.logger)
 				if err != nil {
-					return err
+					r.logger.Error(ctx, "%s", err)
 				}
 
-				// Index result file
-				if viper.GetString("elastic.server") != "" {
-					indexer, err := elastic.NewESIndexer(ctx, r.logger)
-					if err != nil {
-						r.logger.Error(ctx, "obtaining indexer: %s", err)
-					}
-					serverVersion := helpers.GetServerVersion(ctx, conn)
-					r.logger.Info(ctx, "server version %s", serverVersion)
-					err = indexer.IndexFile(ctx, r.testID, serverVersion, resultsFile.Name(), r.logger)
-					if err != nil {
-						r.logger.Error(ctx, "Error during ES indexing: %s", err)
-					}
-				}
+				testOptions.Metrics.Close()
 				wg.Done()
 				return nil
 			}(ctx, concurrentConnections, i, conn, t)
