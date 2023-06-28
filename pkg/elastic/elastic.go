@@ -3,6 +3,7 @@ package elastic
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/cloud-bulldozer/go-commons/indexers"
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/logging"
@@ -17,7 +18,6 @@ func newClient(ctx context.Context, logger logging.Logger) (*indexers.Indexer, e
 		config := indexers.IndexerConfig{
 			Type:             indexers.LocalIndexer,
 			MetricsDirectory: viper.GetString("output-path"),
-			Enabled:          true,
 		}
 		client, err := indexers.NewIndexer(config)
 		if err != nil {
@@ -56,7 +56,7 @@ func IndexFile(ctx context.Context, testID string, version string, attack string
 	_doc.Attack = attack
 
 	resp, err := (*indexer).Index([]interface{}{_doc}, indexers.IndexingOpts{
-		JobName: testID,
+		MetricName: strings.Join([]string{testID, attack}, "-"),
 	})
 	if err != nil {
 		errors = fmt.Sprintf("%s\n%s", errors, err)
