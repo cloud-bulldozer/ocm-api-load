@@ -74,7 +74,13 @@ func (r *Runner) Run(ctx context.Context) error {
 
 				var metrics vegeta.Metrics
 				metrics.Histogram = &vegeta.Histogram{
-					Buckets: vegeta.Buckets{time.Millisecond},
+					Buckets: vegeta.Buckets{0 * time.Millisecond,
+						50 * time.Millisecond,
+						100 * time.Millisecond,
+						300 * time.Millisecond,
+						500 * time.Millisecond,
+						1000 * time.Millisecond,
+						5000 * time.Millisecond},
 				}
 
 				// Bind "Test Harness"
@@ -141,17 +147,15 @@ func (r *Runner) Run(ctx context.Context) error {
 						}
 					}
 				}
+				testOptions.Metrics.Close()
 
 				// Index result file
-
 				serverVersion := helpers.GetServerVersion(ctx, conn)
 				r.logger.Info(ctx, "server version %s", serverVersion)
 				err = elastic.IndexFile(ctx, r.testID, serverVersion, testOptions.TestName, fileName, *testOptions.Metrics, r.logger)
 				if err != nil {
 					r.logger.Error(ctx, "%s", err)
 				}
-
-				testOptions.Metrics.Close()
 				wg.Done()
 				return nil
 			}(ctx, concurrentConnections, i, conn, t)
