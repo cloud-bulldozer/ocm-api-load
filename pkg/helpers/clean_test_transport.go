@@ -69,7 +69,9 @@ func (t *CleanTestTransport) addToCleanup(request *http.Request, response *http.
 			return response
 		}
 	}
-	markClusterForCleanup(ctx, clusterID.(string), deprovision, t.Logger)
+	if clusterID.(string) != "" {
+		markClusterForCleanup(ctx, clusterID.(string), deprovision, t.Logger)
+	}
 
 	body, err := json.Marshal(cluster)
 	if err != nil {
@@ -103,7 +105,9 @@ func (t *CleanTestTransport) addToArchive(request *http.Request, response *http.
 		return response
 	}
 
-	markSubscriptionForArchiving(ctx, subscriptionID.(string), t.Logger)
+	if subscriptionID.(string) != "" {
+		markSubscriptionForArchiving(ctx, subscriptionID.(string), t.Logger)
+	}
 	body, err := json.Marshal(authorization)
 	if err != nil {
 		t.Logger.Error(ctx, "Failed to marshall body of response for request %s %s: %v", request.Method,
@@ -237,7 +241,9 @@ func (t *CleanTestTransport) addToServiceCleanup(request *http.Request, response
 			request.URL.String(), err)
 		return response
 	}
-	markServiceForCleanup(ctx, serviceID.(string), t.Logger)
+	if serviceID.(string) != "" {
+		markServiceForCleanup(ctx, serviceID.(string), t.Logger)
+	}
 
 	body, err := json.Marshal(service)
 	if err != nil {
