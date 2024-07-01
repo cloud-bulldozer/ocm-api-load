@@ -29,20 +29,37 @@ func (c Connection) GetConnection() *sdk.Connection {
 // BuildConnection build the vegeta connection
 // that is going to be used for testing
 func BuildConnection(gateway, clientID, clientSecret, token string, logger logging.Logger, ctx context.Context) (*sdk.Connection, error) {
-	conn, err := sdk.NewConnectionBuilder().
-		Insecure(true).
-		URL(gateway).
-		Client(clientID, clientSecret).
-		Tokens(token).
-		Logger(logger).
-		TransportWrapper(func(wrapped http.RoundTripper) http.RoundTripper {
-			return &helpers.CleanTestTransport{Wrapped: wrapped, Logger: logger}
-		}).
-		BuildContext(ctx)
-	if err != nil {
-		return nil, err
+	if token == "" {
+		conn, err := sdk.NewConnectionBuilder().
+			Insecure(true).
+			URL(gateway).
+			Client(clientID, clientSecret).
+			Logger(logger).
+			TransportWrapper(func(wrapped http.RoundTripper) http.RoundTripper {
+				return &helpers.CleanTestTransport{Wrapped: wrapped, Logger: logger}
+			}).
+			BuildContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return conn, nil
+	} else {
+		conn, err := sdk.NewConnectionBuilder().
+			Insecure(true).
+			URL(gateway).
+			Client(clientID, clientSecret).
+			Tokens(token).
+			Logger(logger).
+			TransportWrapper(func(wrapped http.RoundTripper) http.RoundTripper {
+				return &helpers.CleanTestTransport{Wrapped: wrapped, Logger: logger}
+			}).
+			BuildContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return conn, nil
 	}
-	return conn, nil
+
 }
 
 func BuildConnections(ctx context.Context, logger logging.Logger) ([]*sdk.Connection, error) {
@@ -51,12 +68,12 @@ func BuildConnections(ctx context.Context, logger logging.Logger) ([]*sdk.Connec
 	var auths []interface{}
 	if viper.Sub("ocm") != nil {
 		auths = viper.GetStringMap("ocm")["auths"].([]interface{})
-	} else if viper.GetString("ocm-token") != "" {
+	} else if (viper.GetString("ocm-token") != "") || (viper.GetString("client-id") != "" && viper.GetString("client-secret") != "") {
 		auth := map[string]interface{}{
-				"token": viper.GetString("ocm-token"),
-				"client-id": viper.GetString("client.id"),
-				"client-secret": viper.GetString("client.secret"),
-			}
+			"token":         viper.GetString("ocm-token"),
+			"client-id":     viper.GetString("client-id"),
+			"client-secret": viper.GetString("client-secret"),
+		}
 		auths = append(auths, auth)
 	}
 	for _, a := range auths {
