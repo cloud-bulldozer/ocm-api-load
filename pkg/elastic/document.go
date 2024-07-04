@@ -5,8 +5,10 @@ import (
 )
 
 type doc struct {
-	Uuid    string         `json:"uuid"`
-	Version string         `json:"version"`
-	Attack  string         `json:"attack"`
-	Metrics vegeta.Metrics `json:"metrics"`
+	Uuid     string         `json:"uuid"`
+	Version  string         `json:"version"`
+	Attack   string         `json:"attack"`
+	BuildURL string         `json:"buildUrl"`
+	CiSystem string         `json:"ciSystem"`
+	Metrics  vegeta.Metrics `json:"metrics"`
 }
