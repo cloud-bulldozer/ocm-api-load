@@ -11,18 +11,34 @@ import (
 // BuildConnection build the vegeta connection
 // that is going to be used for testing
 func BuildConnection(ctx context.Context, gateway, clientID, clientSecret, token string, logger logging.Logger) (*sdk.Connection, error) {
-	conn, err := sdk.NewConnectionBuilder().
-		Insecure(true).
-		URL(gateway).
-		Client(clientID, clientSecret).
-		Tokens(token).
-		Logger(logger).
-		TransportWrapper(func(wrapped http.RoundTripper) http.RoundTripper {
-			return &CleanTestTransport{Wrapped: wrapped, Logger: logger}
-		}).
-		BuildContext(ctx)
-	if err != nil {
-		return nil, err
+	if token == "" {
+		conn, err := sdk.NewConnectionBuilder().
+			Insecure(true).
+			URL(gateway).
+			Client(clientID, clientSecret).
+			Logger(logger).
+			TransportWrapper(func(wrapped http.RoundTripper) http.RoundTripper {
+				return &CleanTestTransport{Wrapped: wrapped, Logger: logger}
+			}).
+			BuildContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return conn, nil
+	} else {
+		conn, err := sdk.NewConnectionBuilder().
+			Insecure(true).
+			URL(gateway).
+			Client(clientID, clientSecret).
+			Tokens(token).
+			Logger(logger).
+			TransportWrapper(func(wrapped http.RoundTripper) http.RoundTripper {
+				return &CleanTestTransport{Wrapped: wrapped, Logger: logger}
+			}).
+			BuildContext(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return conn, nil
 	}
-	return conn, nil
 }

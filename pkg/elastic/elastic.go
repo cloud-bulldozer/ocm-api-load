@@ -3,6 +3,7 @@ package elastic
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/cloud-bulldozer/go-commons/indexers"
@@ -48,12 +49,16 @@ func IndexFile(ctx context.Context, testID string, version string, attack string
 		logger.Error(ctx, "obtaining indexer: %s", err)
 	}
 
+	env := extractENVContent()
+
 	var errors string
 	_doc := doc{}
 	_doc.Metrics = metrics
 	_doc.Uuid = testID
 	_doc.Version = version
 	_doc.Attack = attack
+	_doc.BuildURL = env["buildUrl"]
+	_doc.CiSystem = env["CiSystem"]
 
 	resp, err := (*indexer).Index([]interface{}{_doc}, indexers.IndexingOpts{
 		MetricName: strings.Join([]string{testID, attack}, "-"),
@@ -67,4 +72,24 @@ func IndexFile(ctx context.Context, testID string, version string, attack string
 		return fmt.Errorf("BulkIndexer Error: %s", errors)
 	}
 	return nil
+}
+
+func extractENVContent() map[string]string {
+	result := make(map[string]string)
+	buildURL := os.Getenv("BUILD_URL")
+	if buildURL != "" {
+		result["buildUrl"] = buildURL
+	} else {
+		result["buildUrl"] = "Manual run"
+	}
+	dagID := os.Getenv("AIRFLOW_CTX_DAG_ID")
+	jenkinsURL := os.Getenv("JENKINS_URL")
+	if jenkinsURL != "" {
+		result["CiSystem"] = "Jenkins"
+	} else if dagID != "" {
+		result["CiSystem"] = "Airflow"
+	} else {
+		result["CiSystem"] = "Local"
+	}
+	return result
 }

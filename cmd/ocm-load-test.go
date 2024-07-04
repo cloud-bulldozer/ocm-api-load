@@ -67,8 +67,12 @@ func init() {
 	rootCmd.Flags().Int("ramp-steps", 0, "Number of stepts to get from start rate to end rate. (Minimum 2 steps)")
 	rootCmd.Flags().Int("ramp-duration", 0, "Duration of ramp in minutes, before normal execution")
 
-	//Required flags
+	// Deprecated flags
 	rootCmd.Flags().String("ocm-token", "", "OCM Authorization token")
+
+	//Required flags
+	rootCmd.Flags().String("client-id", "", "OCM Service Account client ID")
+	rootCmd.Flags().String("client-secret", "", "OCM Service Account cliient secret")
 	// AWS config
 	// If multiple AWS account are needed use the config file
 	rootCmd.Flags().String("aws-region", "us-west-1", "AWS region")
@@ -168,20 +172,20 @@ func configES() error {
 
 func run(cmd *cobra.Command, args []string) error {
 	logger, err := logging.NewGoLoggerBuilder().
-                Debug(viper.GetBool("verbose")).
-                LogFile(viper.GetString("log-file")).
-                Build()
-        if err != nil {
-                fmt.Fprintf(os.Stderr, "Can't build logger: %v\n", err)
-                os.Exit(1)
-        }
+		Debug(viper.GetBool("verbose")).
+		LogFile(viper.GetString("log-file")).
+		Build()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Can't build logger: %v\n", err)
+		os.Exit(1)
+	}
 
-	if viper.Sub("ocm") == nil && viper.GetString("ocm-token") == "" {
-		logger.Fatal(cmd.Context(), "ocm section or ocm-token is necessary configuration")
+	if viper.Sub("ocm") == nil && (viper.GetString("ocm-token") == "" && (viper.GetString("client-id") == "" && viper.GetString("client-secret") == "")) {
+		logger.Fatal(cmd.Context(), "ocm-credentials are necessary configuration")
 	}
 	err = helpers.CreateFolder(cmd.Context(), viper.GetString("output-path"), logger)
 	if err != nil {
-		logger.Fatal(cmd.Context(), "creating api connection: %v", err)
+		logger.Fatal(cmd.Context(), "creating output folder: %v", err)
 	}
 	logger.Info(cmd.Context(), "Using output directory: %s", viper.GetString("output-path"))
 

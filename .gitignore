@@ -1,5 +1,6 @@
 # DevEnv
 .vscode
+.go-version
 /env*
 # App
 ocm-load-test
