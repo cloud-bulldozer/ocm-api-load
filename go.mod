@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/Rican7/retry v0.3.1
 	github.com/cloud-bulldozer/go-commons v1.0.16
-	github.com/openshift-online/ocm-sdk-go v0.1.428
+	github.com/openshift-online/ocm-sdk-go v0.1.444
 	github.com/satori/go.uuid v1.2.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
