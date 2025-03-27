@@ -28,7 +28,7 @@ func newClient(ctx context.Context, logger logging.Logger) (*indexers.Indexer, e
 	} else {
 		logger.Debug(ctx, "Using server: %s", viper.GetString("elastic.server"))
 		config := indexers.IndexerConfig{
-			Type: indexers.ElasticIndexer,
+			Type: indexers.OpenSearchIndexer,
 			Servers: []string{
 				viper.GetString("elastic.server"),
 			},
@@ -59,6 +59,7 @@ func IndexFile(ctx context.Context, testID string, version string, attack string
 	_doc.Attack = attack
 	_doc.BuildURL = env["buildUrl"]
 	_doc.CiSystem = env["CiSystem"]
+	fmt.Printf("%v", _doc)
 
 	resp, err := (*indexer).Index([]interface{}{_doc}, indexers.IndexingOpts{
 		MetricName: strings.Join([]string{testID, attack}, "-"),

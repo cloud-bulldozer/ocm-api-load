@@ -24,6 +24,7 @@ var failedDeletedSubcriptionIDs = make([]string, 0)
 var createdServiceIDs = make([]string, 0)
 var validateDeletedServicesIDs = make([]string, 0)
 var failedDeletedServicesIDs = make([]string, 0)
+var FakeClustercCount int = 0
 
 func Cleanup(ctx context.Context, connection *sdk.Connection) {
 	if len(createdClusterIDs) == 0 && len(createdSubcriptionIDs) == 0 && len(createdServiceIDs) == 0 {
@@ -137,8 +138,8 @@ func CreateCluster(ctx context.Context, body string, gatewayConnection *sdk.Conn
 		return "", nil, err
 	}
 	if postResponse.Status() != http.StatusCreated {
-		return "", nil, errors.Errorf("Failed to create cluster: expected response code %d, instead found: %d",
-			http.StatusCreated, postResponse.Status())
+		return "", nil, errors.Errorf("Failed to create cluster: expected response code %d, instead found: %d\nAdditional info: %s",
+			http.StatusCreated, postResponse.Status(), postResponse.String())
 	}
 	data, err := Parse(postResponse.Bytes())
 	if err != nil {
