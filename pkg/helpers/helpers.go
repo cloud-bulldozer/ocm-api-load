@@ -24,7 +24,6 @@ var failedDeletedSubcriptionIDs = make([]string, 0)
 var createdServiceIDs = make([]string, 0)
 var validateDeletedServicesIDs = make([]string, 0)
 var failedDeletedServicesIDs = make([]string, 0)
-var FakeClustercCount int = 0
 
 func Cleanup(ctx context.Context, connection *sdk.Connection) {
 	if len(createdClusterIDs) == 0 && len(createdSubcriptionIDs) == 0 && len(createdServiceIDs) == 0 {

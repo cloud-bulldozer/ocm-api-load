@@ -59,7 +59,6 @@ func IndexFile(ctx context.Context, testID string, version string, attack string
 	_doc.Attack = attack
 	_doc.BuildURL = env["buildUrl"]
 	_doc.CiSystem = env["CiSystem"]
-	fmt.Printf("%v", _doc)
 
 	resp, err := (*indexer).Index([]interface{}{_doc}, indexers.IndexingOpts{
 		MetricName: strings.Join([]string{testID, attack}, "-"),
