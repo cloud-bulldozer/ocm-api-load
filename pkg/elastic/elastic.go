@@ -28,7 +28,7 @@ func newClient(ctx context.Context, logger logging.Logger) (*indexers.Indexer, e
 	} else {
 		logger.Debug(ctx, "Using server: %s", viper.GetString("elastic.server"))
 		config := indexers.IndexerConfig{
-			Type: indexers.ElasticIndexer,
+			Type: indexers.OpenSearchIndexer,
 			Servers: []string{
 				viper.GetString("elastic.server"),
 			},

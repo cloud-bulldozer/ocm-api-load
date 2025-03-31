@@ -6,7 +6,6 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
-	"time"
 
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/tests/handlers"
@@ -118,6 +117,42 @@ var tests = []types.TestOptions{
 		Method:   http.MethodPatch,
 		Handler:  handlers.TestPatchService,
 	},
+	{
+		TestName: "get-provision-shards",
+		Path:     "/api/clusters_mgmt/v1/provision_shards",
+		Method:   http.MethodGet,
+		Handler:  handlers.TestStaticEndpoint,
+	},
+	{
+		TestName: "get-versions",
+		Path:     "/api/clusters_mgmt/v1/versions",
+		Method:   http.MethodGet,
+		Handler:  handlers.TestStaticEndpoint,
+	},
+	{
+		TestName: "get-cloud-providers",
+		Path:     "/api/clusters_mgmt/v1/cloud_providers",
+		Method:   http.MethodGet,
+		Handler:  handlers.TestStaticEndpoint,
+	},
+	{
+		TestName: "get-addons",
+		Path:     "/api/clusters_mgmt/v1/addons",
+		Method:   http.MethodGet,
+		Handler:  handlers.TestStaticEndpoint,
+	},
+	{
+		TestName: "get-machine-pools",
+		Path:     "/api/clusters_mgmt/v1/clusters/{cluster_id}/machine_pools",
+		Method:   http.MethodGet,
+		Handler:  handlers.TestClusterMachinepools,
+	},
+	{
+		TestName: "get-cluster-logs",
+		Path:     "/api/clusters_mgmt/v1/clusters/{cluster_id}/logs",
+		Method:   http.MethodGet,
+		Handler:  handlers.TestClusterLogs,
+	},
 }
 
 func accessReviewBody() []byte {
@@ -174,7 +209,6 @@ func certificatesBody() []byte {
 }
 
 func randomCertArch() string {
-	rand.Seed(time.Now().UnixNano()) //seed to randomize on each run
 	arch := []string{"x86", "x86_64", "ppc", "ppc64", "ppc64le", "s390", "s390x", "ia64", "aarch64"}
 	return arch[rand.Intn(len(arch))]
 }

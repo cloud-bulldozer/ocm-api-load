@@ -137,8 +137,8 @@ func CreateCluster(ctx context.Context, body string, gatewayConnection *sdk.Conn
 		return "", nil, err
 	}
 	if postResponse.Status() != http.StatusCreated {
-		return "", nil, errors.Errorf("Failed to create cluster: expected response code %d, instead found: %d",
-			http.StatusCreated, postResponse.Status())
+		return "", nil, errors.Errorf("Failed to create cluster: expected response code %d, instead found: %d\nAdditional info: %s",
+			http.StatusCreated, postResponse.Status(), postResponse.String())
 	}
 	data, err := Parse(postResponse.Bytes())
 	if err != nil {
