@@ -14,7 +14,7 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Vet
         run: go vet ./...
       - name: Test
@@ -28,7 +28,7 @@ jobs:
     name: Python Lint
     steps:
       - name: Check out source repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Set up Python environment
         uses: actions/setup-python@v4
         with:
