@@ -79,6 +79,8 @@ func init() {
 	rootCmd.Flags().String("aws-access-key", "", "AWS access key")
 	rootCmd.Flags().String("aws-access-secret", "", "AWS access secret")
 	rootCmd.Flags().String("aws-account-id", "", "AWS Account ID, is the 12-digit account number.")
+	//OCM Regionality flags
+	rootCmd.Flags().String("cluster-id", "", "Cluster ID to use in test scenarios")
 	rootCmd.AddCommand(cmd.NewVersionCommand())
 }
 
