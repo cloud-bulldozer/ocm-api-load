@@ -2,6 +2,7 @@ package types
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/logging"
@@ -20,6 +21,7 @@ type TestOptions struct {
 	Path     string // path of the endpoint. e.g. /api/v1/foo
 	Method   string // HTTP Method
 	Body     []byte // Only really used by generic test handlers
+	Header   http.Header
 	Rate     vegeta.Rate
 	Duration time.Duration
 

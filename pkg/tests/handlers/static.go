@@ -13,6 +13,7 @@ func TestStaticEndpoint(ctx context.Context, options *types.TestOptions) error {
 	target := vegeta.Target{
 		Method: options.Method,
 		URL:    options.Path,
+		Header: options.Header,
 	}
 	if len(options.Body) > 0 {
 		target.Body = options.Body

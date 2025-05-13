@@ -124,6 +124,13 @@ var tests = []types.TestOptions{
 		Handler:  handlers.TestStaticEndpoint,
 	},
 	{
+		TestName: "get-cluster-logs",
+		Path:     "/api/clusters_mgmt/v1/clusters/{cluster_id}/logs",
+		Method:   http.MethodGet,
+		Handler:  handlers.TestGETReplaceClusterID,
+	},
+	// OCM Proxy tests
+	{
 		TestName: "get-versions",
 		Path:     "/api/clusters_mgmt/v1/versions",
 		Method:   http.MethodGet,
@@ -145,13 +152,55 @@ var tests = []types.TestOptions{
 		TestName: "get-machine-pools",
 		Path:     "/api/clusters_mgmt/v1/clusters/{cluster_id}/machine_pools",
 		Method:   http.MethodGet,
-		Handler:  handlers.TestClusterMachinepools,
+		Handler:  handlers.TestGETReplaceClusterID,
 	},
 	{
-		TestName: "get-cluster-logs",
-		Path:     "/api/clusters_mgmt/v1/clusters/{cluster_id}/logs",
+		TestName: "get-cluster",
+		Path:     "/api/clusters_mgmt/v1/clusters/{cluster_id}",
 		Method:   http.MethodGet,
-		Handler:  handlers.TestClusterLogs,
+		Handler:  handlers.TestGETReplaceClusterID,
+	},
+	{
+		TestName: "get-cluster-tunning-configs",
+		Path:     "/api/clusters_mgmt/v1/clusters/{cluster_id}/tuning_configs",
+		Method:   http.MethodGet,
+		Handler:  handlers.TestGETReplaceClusterID,
+	},
+	{
+		TestName: "get-cluster-identity-providers",
+		Path:     "/api/clusters_mgmt/v1/clusters/{cluster_id}/identity_providers",
+		Method:   http.MethodGet,
+		Handler:  handlers.TestGETReplaceClusterID,
+	},
+	{
+		TestName: "search-cluster",
+		Path:     "/api/clusters_mgmt/v1/clusters",
+		Method:   http.MethodGet,
+		Handler:  handlers.TestSearchCluster,
+	},
+	{
+		TestName: "cluster-limited-support-reasons",
+		Path:     "/api/clusters_mgmt/v1/clusters/{cluster_id}/limited_support_reasons",
+		Method:   http.MethodPost,
+		Handler:  handlers.TestClusterLimitedSupportReasons,
+	},
+	{
+		TestName: "get-osl-cluster-logs",
+		Path:     "/api/service_logs/v1/clusters/cluster_logs",
+		Method:   http.MethodGet,
+		Handler:  handlers.TestOSLGetClusterLogs,
+	},
+	{
+		TestName: "get-osl-uuid-cluster-logs",
+		Path:     "/api/service_logs/v1/clusters/{cluster_id}/cluster_logs",
+		Method:   http.MethodGet,
+		Handler:  handlers.TestGETReplaceClusterID,
+	},
+	{
+		TestName: "post-osl-cluster-logs",
+		Path:     "/api/service_logs/v1/cluster_logs",
+		Method:   http.MethodPost,
+		Handler:  handlers.TestOSLPostClusterLogs,
 	},
 }
 

@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/helpers"
 	"github.com/cloud-bulldozer/ocm-api-load/pkg/logging"
@@ -13,6 +14,7 @@ import (
 
 	sdk "github.com/openshift-online/ocm-sdk-go"
 	v1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
+	osl "github.com/openshift-online/ocm-sdk-go/servicelogs/v1"
 	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
 
@@ -160,33 +162,183 @@ func buildFakeClusters(ctx context.Context, prefix string, quantity int, ID stri
 	return clusterIDs, nil
 }
 
-// Test cluster machinepools
-func TestClusterMachinepools(ctx context.Context, options *types.TestOptions) error {
-	clusterIDs, err := buildFakeClusters(ctx, "mp", 1, options.ID, options.Connection, options.Logger)
-	if err != nil {
-		options.Logger.Error(ctx, "CreatingFakeclusters for Mahcinepools test: %s", err)
-		return nil
+// Test GET with a replace of cluster_ID
+func TestGETReplaceClusterID(ctx context.Context, options *types.TestOptions) error {
+	clusterID := viper.GetString("cluster-id")
+	if clusterID == "" {
+		clusterIDs, err := buildFakeClusters(ctx, "mp", 1, options.ID, options.Connection, options.Logger)
+		if err != nil {
+			options.Logger.Error(ctx, "CreatingFakeclusters for test: %s", err)
+			return nil
+		}
+		var currentTarget = 0
+		clusterID = clusterIDs[currentTarget]
 	}
-	var currentTarget = 0
 
-	options.Logger.Info(ctx, "Using cluster id: %s.", clusterIDs[currentTarget])
-	options.Path = strings.Replace(options.Path, "{cluster_id}", clusterIDs[currentTarget], 1)
+	options.Logger.Info(ctx, "Using cluster id: %s.", clusterID)
+	options.Path = strings.Replace(options.Path, "{cluster_id}", clusterID, 1)
 
 	return TestStaticEndpoint(ctx, options)
-
 }
 
-// Test cluster logs
-func TestClusterLogs(ctx context.Context, options *types.TestOptions) error {
-	clusterIDs, err := buildFakeClusters(ctx, "cl", 1, options.ID, options.Connection, options.Logger)
-	if err != nil {
-		options.Logger.Error(ctx, "CreatingFakeclusters for Mahcinepools test: %s", err)
-		return nil
+// Test GET with a replace of cluster_ID
+func TestSearchCluster(ctx context.Context, options *types.TestOptions) error {
+	clusterID := viper.GetString("cluster-id")
+	if clusterID == "" {
+		clusterIDs, err := buildFakeClusters(ctx, "mp", 1, options.ID, options.Connection, options.Logger)
+		if err != nil {
+			options.Logger.Error(ctx, "CreatingFakeclusters for test: %s", err)
+			return nil
+		}
+		var currentTarget = 0
+		clusterID = clusterIDs[currentTarget]
 	}
-	var currentTarget = 0
-
-	options.Logger.Info(ctx, "Using cluster id: %s.", clusterIDs[currentTarget])
-	options.Path = strings.Replace(options.Path, "{cluster_id}", clusterIDs[currentTarget], 1)
+	options.Logger.Info(ctx, "Using cluster id: %s.", clusterID)
+	options.Path = fmt.Sprintf("%s?search=id%%3D%%27%s%%27", options.Path, clusterID)
 
 	return TestStaticEndpoint(ctx, options)
+}
+
+// Generates a targeter for the "POST /api/clusters_mgmt/v1/clusters/{cluster_id}/limited_support_reasons" endpoint
+// with monotonic increasing indexes.
+func generateLimitedSupportReassonsTargeter(ctx context.Context, method, url string, log logging.Logger) vegeta.Targeter {
+	idx := 0
+	log.Info(ctx, url)
+	targeter := func(t *vegeta.Target) error {
+		body, err := v1.NewLimitedSupportReason().
+			CreationTimestamp(time.Now()).
+			Details("test").
+			ID(fmt.Sprintf("%d", idx)).
+			DetectionType(v1.DetectionTypeManual).
+			HREF("test").
+			Summary("test").
+			Build()
+		if err != nil {
+			return err
+		}
+		log.Info(ctx, "%v", body)
+
+		var raw bytes.Buffer
+		err = v1.MarshalLimitedSupportReason(body, &raw)
+		if err != nil {
+			return err
+		}
+
+		t.Method = method
+		t.URL = url
+		t.Body = raw.Bytes()
+
+		idx += 1
+		return nil
+	}
+	return targeter
+}
+
+// Test Cluster Limited support reassons
+func TestClusterLimitedSupportReasons(ctx context.Context, options *types.TestOptions) error {
+	clusterID := viper.GetString("cluster-id")
+	if clusterID == "" {
+		clusterIDs, err := buildFakeClusters(ctx, "mp", 1, options.ID, options.Connection, options.Logger)
+		if err != nil {
+			options.Logger.Error(ctx, "CreatingFakeclusters for test: %s", err)
+			return nil
+		}
+		var currentTarget = 0
+		clusterID = clusterIDs[currentTarget]
+	}
+	testName := options.TestName
+	options.Logger.Info(ctx, "Using cluster id: %s.", clusterID)
+	options.Path = strings.Replace(options.Path, "{cluster_id}", clusterID, 1)
+	targeter := generateLimitedSupportReassonsTargeter(ctx, options.Method, options.Path, options.Logger)
+
+	for res := range options.Attacker.Attack(targeter, options.Rate, options.Duration, testName) {
+		options.Metrics.Add(res)
+	}
+
+	return nil
+}
+
+// Test OSL CLuster Logs cluster_ID
+func TestOSLGetClusterLogs(ctx context.Context, options *types.TestOptions) error {
+	clusterID := viper.GetString("cluster-id")
+	if clusterID == "" {
+		clusterIDs, err := buildFakeClusters(ctx, "mp", 1, options.ID, options.Connection, options.Logger)
+		if err != nil {
+			options.Logger.Error(ctx, "CreatingFakeclusters for test: %s", err)
+			return nil
+		}
+		var currentTarget = 0
+		clusterID = clusterIDs[currentTarget]
+	}
+
+	options.Logger.Info(ctx, "Using cluster id: %s.", clusterID)
+	body := fmt.Sprintf("{\"cluster_id\": \"%s\"}", clusterID)
+	options.Body = []byte(body)
+	options.Path = fmt.Sprintf("%s?cluster_id=%s", options.Path, clusterID)
+
+	return TestStaticEndpoint(ctx, options)
+}
+
+// Generates a targeter for the "POST /api/service_logs/v1/cluster_logs" endpoint
+// with monotonic increasing indexes.
+func generateTestOSLPostClusterLogsTargeter(ctx context.Context, method, clusterID string, url string, log logging.Logger) vegeta.Targeter {
+	idx := 0
+
+	targeter := func(t *vegeta.Target) error {
+		logEntry, err := osl.NewLogEntry().
+			HREF("test").
+			ID(fmt.Sprintf("%d", idx)).
+			CreatedAt(time.Now()).
+			CreatedBy("test").
+			ClusterID(clusterID).
+			Description(fmt.Sprintf("this is a log %d", idx)).
+			Severity(osl.SeverityInfo).
+			DocReferences("test").
+			EventStreamID(fmt.Sprintf("stream-%d", idx)).
+			LogType(osl.LogTypeClusterCreateHighLevel).
+			ServiceName("test").
+			Timestamp(time.Now()).
+			Username("test").
+			Summary("test").
+			Link(false).
+			Build()
+		if err != nil {
+			return err
+		}
+		var raw bytes.Buffer
+		err = osl.MarshalLogEntry(logEntry, &raw)
+		if err != nil {
+			return err
+		}
+
+		t.Method = method
+		t.URL = url
+		t.Body = raw.Bytes()
+		idx += 1
+		return nil
+	}
+	return targeter
+}
+
+// Test OSL Post CLuster Logs
+func TestOSLPostClusterLogs(ctx context.Context, options *types.TestOptions) error {
+	clusterID := viper.GetString("cluster-id")
+	if clusterID == "" {
+		clusterIDs, err := buildFakeClusters(ctx, "mp", 1, options.ID, options.Connection, options.Logger)
+		if err != nil {
+			options.Logger.Error(ctx, "CreatingFakeclusters for test: %s", err)
+			return nil
+		}
+		var currentTarget = 0
+		clusterID = clusterIDs[currentTarget]
+	}
+
+	testName := options.TestName
+	targeter := generateTestOSLPostClusterLogsTargeter(ctx, options.Method, clusterID, options.Path, options.Logger)
+
+	for res := range options.Attacker.Attack(targeter, options.Rate, options.Duration, testName) {
+		options.Metrics.Add(res)
+	}
+
+	return nil
 }
